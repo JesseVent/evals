@@ -114,6 +114,7 @@ export function createCliAgent<M extends string = string>(
         stoppedReason: runner.deriveStopReason?.(raw, command) ?? processStopReason(command),
         ...(usage ? { usage } : {}),
         trace: assembleAgentTrace(events),
+        ...(raw ? { rawTranscript: raw } : {}),
       };
     },
   };

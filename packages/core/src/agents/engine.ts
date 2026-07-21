@@ -101,6 +101,7 @@ export function createCliAgent<M extends string = string>(
 
       const { events } = raw ? parser.parseTranscript(raw) : { events: [] };
       const adapted = adaptTranscript(events);
+      const usage = runner.extractUsage?.(raw);
 
       return {
         // The final report is the transcript's closing assistant message — the
@@ -110,6 +111,7 @@ export function createCliAgent<M extends string = string>(
         transcript: adapted.transcript,
         steps: adapted.steps,
         stoppedReason: runner.deriveStopReason?.(raw, command) ?? processStopReason(command),
+        ...(usage ? { usage } : {}),
       };
     },
   };

@@ -112,6 +112,12 @@ export type {
 export { createParser, supportedParsers } from "./agents/registry.js";
 export { adaptTranscript } from "./parsers/adapt.js";
 export type { AdaptedTranscript } from "./parsers/adapt.js";
+export { buildEvalTrace, uploadableEvalResultSchema } from "./braintrust-spans.js";
+export type {
+  BraintrustEvalTrace,
+  BraintrustSpanNode,
+  UploadableEvalResult,
+} from "./braintrust-spans.js";
 export type { AgentTranscriptParser } from "./parsers/types.js";
 export type {
   ToolName,
@@ -369,12 +375,31 @@ export type AgentRunArgs = {
   timeoutSec: number;
 };
 
+/**
+ * Whole-run token/cost usage, when the agent's harness reports it (Claude
+ * Code's terminal `result` line, Codex's `turn.completed`, ai-sdk's
+ * `totalUsage`). All fields optional — absent means the harness didn't say.
+ */
+export interface AgentUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  /** Prompt tokens served from cache (cache reads). */
+  cachedInputTokens?: number;
+  /** Prompt tokens written to cache (Claude Code only). */
+  cacheCreationInputTokens?: number;
+  reasoningTokens?: number;
+  totalTokens?: number;
+  /** Run cost in USD, when the harness reports one (Claude Code only). */
+  costUsd?: number;
+}
+
 export type AgentRunResult = {
   agentReport: string;
   toolCalls: ToolCallRecord[];
   transcript: TranscriptPart[];
   steps: number;
   stoppedReason: string;
+  usage?: AgentUsage;
 };
 
 export type AgentHarness = {
@@ -718,6 +743,14 @@ export function aiSdkAgent(options: {
 
         const agentReport = result.text.trim();
 
+        const usage: AgentUsage = {
+          inputTokens: result.totalUsage.inputTokens,
+          outputTokens: result.totalUsage.outputTokens,
+          cachedInputTokens: result.totalUsage.cachedInputTokens,
+          reasoningTokens: result.totalUsage.reasoningTokens,
+          totalTokens: result.totalUsage.totalTokens,
+        };
+
         return {
           agentReport,
           toolCalls,
@@ -727,6 +760,7 @@ export function aiSdkAgent(options: {
             result.steps.length >= MAX_STEPS
               ? "max_steps"
               : result.finishReason,
+          usage,
         };
       } finally {
         await closeMcpHandles(mcpHandles);

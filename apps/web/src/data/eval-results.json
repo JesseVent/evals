@@ -4009,7 +4009,7 @@
       {
         "name": "diagnosed missing publication membership",
         "passed": true,
-        "judgeNotes": "Diagnosed the missing orders table in supabase_realtime publication, applied ALTER PUBLICATION ADD TABLE public.orders, preserved courier_locations/RLS/policies, and did not blame or alter unrelated components."
+        "judgeNotes": "Diagnosed missing orders table from supabase_realtime publication, added public.orders, preserved RLS/policies and courier_locations feed."
       }
     ],
     "skills": {
@@ -9347,7 +9347,7 @@
       {
         "name": "diagnosed missing publication membership",
         "passed": true,
-        "judgeNotes": "The assistant correctly identified that subscriptions could reach SUBSCRIBED while INSERT events for orders were silent because public.orders was missing from the supabase_realtime publication. It applied the narrow fix `alter publication supabase_realtime add table public.orders;`, verified both orders and courier_locations remained in the existing publication, and did not alter RLS/policies or recreate/drop the publication."
+        "judgeNotes": "Identified orders missing from supabase_realtime publication as root cause, added only public.orders via ALTER PUBLICATION, verified courier_locations remains and did not alter RLS/policies."
       }
     ],
     "skills": {
@@ -9363,380 +9363,80 @@
       "calls": [
         {
           "source": "search_docs",
-          "query": "query {\n  searchDocs(query: \"supabase_realtime publication postgres_changes table not receiving events\", limit: 5) {\n    nodes {\n      title\n      href\n      content\n      ... on Guide {\n        subsections {\n          nodes {\n            title\n            href\n            content\n          }\n        }\n      }\n    }\n  }\n}",
+          "query": "query { searchDocs(query: \"Supabase Realtime postgres_changes insert RLS select policy\", limit: 5) { nodes { title href content ... on Guide { subsections { nodes { title href content } } } } } }",
           "hasContent": true,
           "pages": [
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes",
-              "title": "Subscribing to Database Changes"
+              "url": "https://supabase.com/docs/guides/realtime/authorization",
+              "title": "Realtime Authorization"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#streaming-inserts",
-              "title": "Streaming inserts"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#examples",
+              "title": "Examples"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#using-broadcast",
-              "title": "Using Broadcast"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast",
+              "title": "Broadcast"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#broadcast-authorization",
-              "title": "Broadcast authorization"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-a-user-to-join-and-read-a-broadcast-topic",
+              "title": "Allow a user to join (and read) a Broadcast topic"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#create-a-trigger-function",
-              "title": "Create a trigger function"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-a-user-to-send-a-broadcast-message",
+              "title": "Allow a user to send a Broadcast message"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#create-a-trigger",
-              "title": "Create a trigger"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#presence",
+              "title": "Presence"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#listening-on-client-side",
-              "title": "Listening on client side"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-users-to-listen-to-presence-messages-on-a-channel",
+              "title": "Allow users to listen to Presence messages on a Channel"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#using-postgres-changes",
-              "title": "Using Postgres Changes"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-users-to-send-presence-messages-on-a-channel",
+              "title": "Allow users to send Presence messages on a channel"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#enable-postgres-changes",
-              "title": "Enable Postgres Changes"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#presence-and-broadcast",
+              "title": "Presence and Broadcast"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#streaming-updates",
-              "title": "Streaming updates"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast-and-presence-read",
+              "title": "Broadcast and Presence read"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes",
-              "title": "Postgres Changes"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast-and-presence-write",
+              "title": "Broadcast and Presence write"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-lt",
-              "title": "Less than (lt)"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#interaction-with-postgres-changes",
+              "title": "Interaction with Postgres Changes"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#quick-start",
-              "title": "Quick start"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#updating-rls-policies",
+              "title": "Updating RLS policies"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#usage",
-              "title": "Usage"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#how-it-works",
+              "title": "How it works"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-schemas",
-              "title": "Listening to specific schemas"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#accessing-request-information",
+              "title": "Accessing request information"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-insert-events",
-              "title": "Listening to INSERT events"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#realtimetopic",
+              "title": "realtime.topic"
             },
             {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-update-events",
-              "title": "Listening to UPDATE events"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-delete-events",
-              "title": "Listening to DELETE events"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-tables",
-              "title": "Listening to specific tables"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-multiple-changes",
-              "title": "Listening to multiple changes"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#filtering-for-specific-changes",
-              "title": "Filtering for specific changes"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#available-filters",
-              "title": "Available filters"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#equal-to-eq",
-              "title": "Equal to (eq)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#not-equal-to-neq",
-              "title": "Not equal to (neq)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-or-equal-to-lte",
-              "title": "Less than or equal to (lte)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-gt",
-              "title": "Greater than (gt)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-or-equal-to-gte",
-              "title": "Greater than or equal to (gte)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#contained-in-list-in",
-              "title": "Contained in list (in)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#receiving-old-records",
-              "title": "Receiving old records"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#private-schemas",
-              "title": "Private schemas"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#custom-tokens",
-              "title": "Custom tokens"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#refreshed-tokens",
-              "title": "Refreshed tokens"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#limitations",
-              "title": "Limitations"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#delete-events-are-not-filterable",
-              "title": "Delete events are not filterable"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#spaces-in-table-names",
-              "title": "Spaces in table names"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#database-instance-and-realtime-performance",
-              "title": "Database instance and realtime performance"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks",
-              "title": "Benchmarks"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#methodology",
-              "title": "Methodology"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#workloads",
-              "title": "Workloads"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#results",
-              "title": "Results"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-using-websockets",
-              "title": "Broadcast: Using WebSockets"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-using-the-database",
-              "title": "Broadcast: Using the database"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-impact-of-payload-size",
-              "title": "Broadcast: Impact of payload size"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#1kb-payload",
-              "title": "1KB payload"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#10kb-payload",
-              "title": "10KB payload"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#50kb-payload",
-              "title": "50KB payload"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-scalability-scenarios",
-              "title": "Broadcast: Scalability scenarios"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#realtime-auth",
-              "title": "Realtime Auth"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/benchmarks#postgres-changes",
-              "title": "Postgres Changes"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol",
-              "title": "Realtime Protocol"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#presence-errors",
-              "title": "Presence errors"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#access-token-refresh",
-              "title": "Access token refresh"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#join-errors",
-              "title": "Join errors"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#websocket-connection-setup",
-              "title": "WebSocket connection setup"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#protocol-messages",
-              "title": "Protocol messages"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#100",
-              "title": "1.0.0"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#200",
-              "title": "2.0.0"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#text-frames",
-              "title": "Text frames"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#binary-frames",
-              "title": "Binary frames"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#user-broadcast-push",
-              "title": "User Broadcast Push"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#user-broadcast",
-              "title": "User Broadcast"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#event-types",
-              "title": "Event types"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#client-sent-events",
-              "title": "Client sent events"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#phx_join",
-              "title": "phx_join"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#phx_leave",
-              "title": "phx_leave"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#heartbeat",
-              "title": "heartbeat"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#access_token",
-              "title": "access_token"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#broadcast-text-frame",
-              "title": "broadcast (text frame)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#broadcast-binary-frame",
-              "title": "broadcast (binary frame)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#presence",
-              "title": "presence"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#server-sent-events",
-              "title": "Server sent events"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#phx_close",
-              "title": "phx_close"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#phx_error",
-              "title": "phx_error"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#phx_reply",
-              "title": "phx_reply"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#system",
-              "title": "system"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#broadcast-text-frame-1",
-              "title": "broadcast (text frame)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#broadcast-binary-frame-1",
-              "title": "broadcast (binary frame)"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#postgres_changes",
-              "title": "postgres_changes"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#presence_state",
-              "title": "presence_state"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#presence_diff",
-              "title": "presence_diff"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#reconnection",
-              "title": "Reconnection"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#channel-level-system-errors",
-              "title": "Channel-level system errors"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#error-handling",
-              "title": "Error handling"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#postgres-changes-subscription-errors",
-              "title": "Postgres Changes subscription errors"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/protocol#broadcast-errors",
-              "title": "Broadcast errors"
+              "url": "https://supabase.com/docs/guides/realtime/authorization#jwt-claims",
+              "title": "JWT claims"
             },
             {
               "url": "https://supabase.com/docs/guides/realtime/getting_started",
               "title": "Getting Started with Realtime"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#next-steps",
-              "title": "Next steps"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#framework-examples",
-              "title": "Framework examples"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#integration-guides",
-              "title": "Integration guides"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#advanced-topics",
-              "title": "Advanced topics"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#security--configuration",
-              "title": "Security & configuration"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#core-features",
-              "title": "Core features"
-            },
-            {
-              "url": "https://supabase.com/docs/guides/realtime/getting_started#when-to-use-postgres-changes",
-              "title": "When to use Postgres Changes"
             },
             {
               "url": "https://supabase.com/docs/guides/realtime/getting_started#when-to-use-presence",
@@ -9805,9 +9505,569 @@
             {
               "url": "https://supabase.com/docs/guides/realtime/getting_started#quick-start",
               "title": "Quick start"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#framework-examples",
+              "title": "Framework examples"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#integration-guides",
+              "title": "Integration guides"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#advanced-topics",
+              "title": "Advanced topics"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#security--configuration",
+              "title": "Security & configuration"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#core-features",
+              "title": "Core features"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#next-steps",
+              "title": "Next steps"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/getting_started#when-to-use-postgres-changes",
+              "title": "When to use Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions",
+              "title": "Storage Helper Functions"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions#storageallow_any_operation",
+              "title": "storage.allow_any_operation()"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions#storagefilename",
+              "title": "storage.filename()"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions#storagefoldername",
+              "title": "storage.foldername()"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions#storageextension",
+              "title": "storage.extension()"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/storage/schema/helper-functions#storageallow_only_operation",
+              "title": "storage.allow_only_operation()"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes",
+              "title": "Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#database-instance-and-realtime-performance",
+              "title": "Database instance and realtime performance"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#quick-start",
+              "title": "Quick start"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#usage",
+              "title": "Usage"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-schemas",
+              "title": "Listening to specific schemas"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-insert-events",
+              "title": "Listening to INSERT events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-update-events",
+              "title": "Listening to UPDATE events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-delete-events",
+              "title": "Listening to DELETE events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-tables",
+              "title": "Listening to specific tables"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-multiple-changes",
+              "title": "Listening to multiple changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#filtering-for-specific-changes",
+              "title": "Filtering for specific changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#available-filters",
+              "title": "Available filters"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#equal-to-eq",
+              "title": "Equal to (eq)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#not-equal-to-neq",
+              "title": "Not equal to (neq)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-lt",
+              "title": "Less than (lt)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-or-equal-to-lte",
+              "title": "Less than or equal to (lte)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-gt",
+              "title": "Greater than (gt)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-or-equal-to-gte",
+              "title": "Greater than or equal to (gte)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#contained-in-list-in",
+              "title": "Contained in list (in)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#receiving-old-records",
+              "title": "Receiving old records"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#private-schemas",
+              "title": "Private schemas"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#custom-tokens",
+              "title": "Custom tokens"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#refreshed-tokens",
+              "title": "Refreshed tokens"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#limitations",
+              "title": "Limitations"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#delete-events-are-not-filterable",
+              "title": "Delete events are not filterable"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#spaces-in-table-names",
+              "title": "Spaces in table names"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports",
+              "title": "Realtime Reports"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-7",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#write-private-channel-subscription-rls-execution-time",
+              "title": "(Write) Private Channel Subscription RLS Execution Time"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-8",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#broadcast-events",
+              "title": "Broadcast Events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#connected-clients",
+              "title": "Connected Clients"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#realtime-reports-overview",
+              "title": "Realtime reports overview"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-1",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#presence-events",
+              "title": "Presence Events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-2",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-9",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#total-requests",
+              "title": "Total Requests"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-11",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#response-speed",
+              "title": "Response Speed"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-10",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#response-errors",
+              "title": "Response Errors"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#postgres-changes-events",
+              "title": "Postgres Changes Events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-3",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#rate-of-channel-joins",
+              "title": "Rate of Channel Joins"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-4",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#message-payload-size",
+              "title": "Message Payload Size"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-5",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#broadcast-from-database-replication-lag",
+              "title": "Broadcast From Database Replication Lag"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#actions-you-can-take-6",
+              "title": "Actions you can take"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/reports#read-private-channel-subscription-rls-execution-time",
+              "title": "(Read) Private Channel Subscription RLS Execution Time"
             }
           ],
-          "resultChars": 335915
+          "resultChars": 287718
+        },
+        {
+          "source": "search_docs",
+          "query": "query { searchDocs(query: \"postgres_changes RLS INSERT table publication realtime\", limit: 5) { nodes { title href content ... on Guide { subsections { nodes { title href content } } } } } }",
+          "hasContent": true,
+          "pages": [
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization",
+              "title": "Realtime Authorization"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-users-to-listen-to-presence-messages-on-a-channel",
+              "title": "Allow users to listen to Presence messages on a Channel"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#updating-rls-policies",
+              "title": "Updating RLS policies"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#interaction-with-postgres-changes",
+              "title": "Interaction with Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast-and-presence-write",
+              "title": "Broadcast and Presence write"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast-and-presence-read",
+              "title": "Broadcast and Presence read"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#presence-and-broadcast",
+              "title": "Presence and Broadcast"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-users-to-send-presence-messages-on-a-channel",
+              "title": "Allow users to send Presence messages on a channel"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#how-it-works",
+              "title": "How it works"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#accessing-request-information",
+              "title": "Accessing request information"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#realtimetopic",
+              "title": "realtime.topic"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#jwt-claims",
+              "title": "JWT claims"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#examples",
+              "title": "Examples"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#broadcast",
+              "title": "Broadcast"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-a-user-to-join-and-read-a-broadcast-topic",
+              "title": "Allow a user to join (and read) a Broadcast topic"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#allow-a-user-to-send-a-broadcast-message",
+              "title": "Allow a user to send a Broadcast message"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/authorization#presence",
+              "title": "Presence"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes",
+              "title": "Subscribing to Database Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#streaming-updates",
+              "title": "Streaming updates"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#streaming-inserts",
+              "title": "Streaming inserts"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#enable-postgres-changes",
+              "title": "Enable Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#using-postgres-changes",
+              "title": "Using Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#listening-on-client-side",
+              "title": "Listening on client side"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#create-a-trigger",
+              "title": "Create a trigger"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#create-a-trigger-function",
+              "title": "Create a trigger function"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#broadcast-authorization",
+              "title": "Broadcast authorization"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#using-broadcast",
+              "title": "Using Broadcast"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes",
+              "title": "Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-or-equal-to-gte",
+              "title": "Greater than or equal to (gte)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-schemas",
+              "title": "Listening to specific schemas"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-insert-events",
+              "title": "Listening to INSERT events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-update-events",
+              "title": "Listening to UPDATE events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-delete-events",
+              "title": "Listening to DELETE events"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-specific-tables",
+              "title": "Listening to specific tables"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#listening-to-multiple-changes",
+              "title": "Listening to multiple changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#filtering-for-specific-changes",
+              "title": "Filtering for specific changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#available-filters",
+              "title": "Available filters"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#equal-to-eq",
+              "title": "Equal to (eq)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#not-equal-to-neq",
+              "title": "Not equal to (neq)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-lt",
+              "title": "Less than (lt)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#less-than-or-equal-to-lte",
+              "title": "Less than or equal to (lte)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#greater-than-gt",
+              "title": "Greater than (gt)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#contained-in-list-in",
+              "title": "Contained in list (in)"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#receiving-old-records",
+              "title": "Receiving old records"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#private-schemas",
+              "title": "Private schemas"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#custom-tokens",
+              "title": "Custom tokens"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#refreshed-tokens",
+              "title": "Refreshed tokens"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#limitations",
+              "title": "Limitations"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#delete-events-are-not-filterable",
+              "title": "Delete events are not filterable"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#spaces-in-table-names",
+              "title": "Spaces in table names"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#database-instance-and-realtime-performance",
+              "title": "Database instance and realtime performance"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#quick-start",
+              "title": "Quick start"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/postgres-changes#usage",
+              "title": "Usage"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks",
+              "title": "Benchmarks"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#results",
+              "title": "Results"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-using-websockets",
+              "title": "Broadcast: Using WebSockets"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-using-the-database",
+              "title": "Broadcast: Using the database"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-impact-of-payload-size",
+              "title": "Broadcast: Impact of payload size"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#1kb-payload",
+              "title": "1KB payload"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#10kb-payload",
+              "title": "10KB payload"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#50kb-payload",
+              "title": "50KB payload"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#broadcast-scalability-scenarios",
+              "title": "Broadcast: Scalability scenarios"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#realtime-auth",
+              "title": "Realtime Auth"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#postgres-changes",
+              "title": "Postgres Changes"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#methodology",
+              "title": "Methodology"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/benchmarks#workloads",
+              "title": "Workloads"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture",
+              "title": "Realtime Architecture"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#elixir--phoenix",
+              "title": "Elixir & Phoenix"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#channels",
+              "title": "Channels"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#global-cluster",
+              "title": "Global cluster"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#connecting-to-a-database",
+              "title": "Connecting to a database"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#broadcast-from-postgres",
+              "title": "Broadcast from Postgres"
+            },
+            {
+              "url": "https://supabase.com/docs/guides/realtime/architecture#streaming-the-write-ahead-log",
+              "title": "Streaming the Write-Ahead Log"
+            }
+          ],
+          "resultChars": 230997
         }
       ]
     },

@@ -117,7 +117,6 @@ export type { AdaptedTranscript } from "./parsers/adapt.js";
 export { buildEvalTrace, uploadableEvalResultSchema } from "./braintrust-spans.js";
 export type {
   BraintrustEvalTrace,
-  BraintrustSpanNode,
   UploadableEvalResult,
 } from "./braintrust-spans.js";
 export type { AgentTranscriptParser } from "./parsers/types.js";
@@ -133,7 +132,7 @@ export type {
   AgentTurn,
   ToolExecution,
 } from "./transcript/agent-trace.js";
-export { collectJudgeCalls, recordJudgeCall } from "./judge-recorder.js";
+export { collectJudgeCalls } from "./judge-recorder.js";
 export type { JudgeCallRecord } from "./judge-recorder.js";
 export type {
   AgentHarnessId,
@@ -632,6 +631,13 @@ export async function judge(args: JudgeInput): Promise<JudgeResult> {
 
   // Evidence trail for the Braintrust upload: what this judge actually saw
   // and what the verdict cost. No-op unless a collector is active.
+  const judgeUsage: AgentUsage = {
+    inputTokens: result.totalUsage.inputTokens,
+    outputTokens: result.totalUsage.outputTokens,
+    cachedInputTokens: result.totalUsage.cachedInputTokens,
+    reasoningTokens: result.totalUsage.reasoningTokens,
+    totalTokens: result.totalUsage.totalTokens,
+  };
   recordJudgeCall({
     rubric: args.rubric,
     input: args.input,
@@ -639,13 +645,9 @@ export async function judge(args: JudgeInput): Promise<JudgeResult> {
     notes: output.notes,
     modelId: model.modelId,
     durationMs: Date.now() - startedAt,
-    usage: {
-      inputTokens: result.totalUsage.inputTokens,
-      outputTokens: result.totalUsage.outputTokens,
-      cachedInputTokens: result.totalUsage.cachedInputTokens,
-      reasoningTokens: result.totalUsage.reasoningTokens,
-      totalTokens: result.totalUsage.totalTokens,
-    },
+    ...(Object.values(judgeUsage).some((v) => v !== undefined)
+      ? { usage: judgeUsage }
+      : {}),
   });
 
   return {

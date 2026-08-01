@@ -36,11 +36,9 @@ import {
 import type {
   AgentHarnessId,
   CheckResult,
-  EvalSuite,
   ExperimentDisplayMetadata,
   ExperimentSuite,
   ModelProvider,
-  ReasoningEffortLevel,
 } from './eval-metadata.js';
 import { reasoningEffortSchema } from './eval-metadata.js';
 import type { AgentMetadata, AgentSandbox } from './agents/types.js';
@@ -116,6 +114,13 @@ export type {
 export { createParser, supportedParsers } from './agents/registry.js';
 export { adaptTranscript } from './parsers/adapt.js';
 export type { AdaptedTranscript } from './parsers/adapt.js';
+// Eval run → AgentPrism trace tree (used by the web viewer's trace panel).
+export { evalResultToTraceSpans } from './trace-viewer.js';
+export type {
+  EvalResultTraceInput,
+  TraceBadge,
+  TraceViewerData,
+} from './trace-viewer.js';
 export type { AgentTranscriptParser } from './parsers/types.js';
 export type {
   ToolName,

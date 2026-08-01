@@ -174,7 +174,14 @@ pnpm eval -- --suite trigger --experiment trigger-claude-sonnet-5 --noisy-contex
 pnpm eval -- --suite trigger --experiment trigger-claude-sonnet-5 --noisy-context
 ```
 
-`experiments/trigger-claude-sonnet-5.ts` and `experiments/trigger-no-skills-claude-sonnet-5.ts` run the same 97 evals with and without skills available, so results can be compared with and without skill access.
+`experiments/trigger-claude-sonnet-5.ts` and `experiments/trigger-no-skills-claude-sonnet-5.ts` run the same 97 evals with and without skills available. After both have result files, cross-tabulate "activated" against "helped" — and optionally diff clean vs. noisy runs — with:
+
+```bash
+cd apps/framework && node --import tsx/esm scripts/trigger-report.ts \
+  --results=trigger-claude-sonnet-5 \
+  --no-skills=trigger-no-skills-claude-sonnet-5 \
+  --diff=trigger-claude-sonnet-5-noisy
+```
 
 ## Framework Checks
 

@@ -8,6 +8,7 @@ First, determine the eval suite for your scenario:
 
 - **Regression** evals are suitable for most scenarios. If we notice agents make a narrow mistake, we track it here to reproduce the issue, verify a fix, and monitor for regression. These scenarios are not included in the benchmark so they don't inflate scores.
 - **Benchmark** evals are scenarios we've intentionally selected for the published benchmark report. These should be representative of the user journey on Supabase to cover a breadth of dimensions.
+- **Trigger** evals measure whether the model loads the right skill given a prompt, not whether the skill's advice is good — see [Skill trigger suite](README.md#skill-trigger-suite) in the README. Add prompts here, not new eval folders by hand: edit `evals/trigger/{prompts,golden}.ts` and regenerate.
 
 Then add a folder under `evals/` containing:
 

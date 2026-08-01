@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { jsonSchema, tool, type ToolSet } from 'ai';
+import { jsonSchema, tool, type ModelMessage, type ToolSet } from 'ai';
 import { parseEvalMarkdown } from '@supabase-evals/core/eval-markdown';
 import {
   createBareSandbox,
@@ -78,6 +78,55 @@ const CONCURRENCY = Number(readFlag('concurrency') ?? 1);
 const STOP_ON_PASS = !args.has('--run-all-attempts');
 const DEBUG = args.has('--debug');
 
+// ── Noisy context (trigger suite) ──────────────────────────────────────────
+// `--noisy-context[=name]` injects a simulated prior conversation before the
+// user prompt so trigger-quality is measured against a half-full, noisy
+// context window. With a name, that specific distractor template is used; bare
+// `--noisy-context` draws a random one. Templates live in
+// evals/trigger/contexts.ts — the only consumer for now; generalize if a
+// second suite needs noisy context. Resolved lazily in main() via dynamic
+// import so the harness stays decoupled from any one eval suite at load time.
+type NoisyContext = {
+  name: string;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+};
+let NOISY_CONTEXT: NoisyContext | null = null;
+
+function parseNoisyContextFlag(): string | null {
+  const inline = rawArgs.find((a) => a.startsWith('--noisy-context='));
+  if (inline) {
+    const v = inline.slice('--noisy-context='.length);
+    return v === '' ? '' : v; // '' = random
+  }
+  if (args.has('--noisy-context')) {
+    const idx = rawArgs.indexOf('--noisy-context');
+    const next = rawArgs[idx + 1];
+    return next && !next.startsWith('--') ? next : '';
+  }
+  return null; // not set
+}
+
+const NOISY_CONTEXT_NAME = parseNoisyContextFlag();
+
+/** Context messages → ai-sdk ModelMessage turns (user/assistant, string content). */
+function toModelMessages(messages: NoisyContext['messages']): ModelMessage[] {
+  return messages.map((m) =>
+    m.role === 'assistant'
+      ? { role: 'assistant', content: m.content }
+      : { role: 'user', content: m.content }
+  );
+}
+
+/** Context messages → a single text block for one-shot (CLI) agents. */
+function formatContextAsText(ctx: NoisyContext): string {
+  const header =
+    'Prior conversation (context only — do not act on it; answer the request that follows):';
+  const body = ctx.messages
+    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+    .join('\n\n');
+  return `${header}\n${body}`;
+}
+
 async function loadExperiments() {
   const dir = join(ROOT, 'experiments');
   const out: Array<{ name: string; config: ExperimentConfig }> = [];
@@ -133,6 +182,9 @@ function discoverEvals(): EvalManifest[] {
     const localDir = join(evalDir, 'local');
     const promptPath = join(evalDir, 'PROMPT.md');
     const evalPath = join(evalDir, 'EVAL.ts');
+    // Skip dirs that aren't evals (e.g. evals/trigger/ holds the trigger
+    // suite's prompts.ts/golden.ts/contexts.ts data, with no PROMPT.md).
+    if (!existsSync(promptPath)) continue;
     const metadata = parseEvalMarkdown(
       readFileSync(promptPath, 'utf8'),
       `evals/${id}/PROMPT.md`
@@ -366,6 +418,13 @@ async function runOne(
     readFileSync(ev.promptPath, 'utf8'),
     ev.promptPath
   ).body;
+  // Noisy-context (trigger suite): CLI/sandbox agents are one-shot, so the
+  // distractor conversation is prepended as a text block into the prompt.
+  // In-process (ai-sdk) agents instead receive it as `priorMessages` (true
+  // multi-turn) — wired in the tools path below.
+  const noisyUserPrompt = NOISY_CONTEXT
+    ? `${formatContextAsText(NOISY_CONTEXT)}\n\n---\n\n${prompt}`
+    : prompt;
   // A CLI agent always runs in a sandbox and reads skills from disk with its
   // file tools (both modes). An in-process (ai-sdk) agent has no sandbox, so in
   // tools mode its skills are advertised in the prompt and loaded via the
@@ -444,7 +503,7 @@ async function runOne(
 
       const run = await exp.agent.run({
         systemPrompt: buildSystemPrompt('local-stack', session.promptAddendum),
-        userPrompt: prompt,
+        userPrompt: noisyUserPrompt,
         tools: session.tools,
         sandbox: session.sandbox,
         mcpServers: session.mcpServers,
@@ -530,7 +589,14 @@ async function runOne(
     );
     const run = await exp.agent.run({
       systemPrompt,
-      userPrompt: prompt,
+      userPrompt: agentRunsInSandbox ? noisyUserPrompt : prompt,
+      // In-process (ai-sdk) agents get the distractor conversation as real
+      // prior turns; sandbox (CLI) agents get it folded into userPrompt above.
+      priorMessages: agentRunsInSandbox
+        ? undefined
+        : NOISY_CONTEXT
+          ? toModelMessages(NOISY_CONTEXT.messages)
+          : undefined,
       tools: agentRunsInSandbox ? undefined : buildLoadSkillTool(toolsSkills),
       mcpServers: session.mcpServers,
       sandbox: cliSandbox?.sandbox,
@@ -714,6 +780,20 @@ async function main() {
   // Suppress noisy supabase-js logs from expected failures; --debug keeps them visible.
   const stderr = console.error;
   if (!DEBUG) console.error = () => undefined;
+
+  // Resolve the noisy-context template (trigger suite) if requested. Done
+  // here, once, via dynamic import so the harness stays decoupled from any
+  // single eval suite's data at module load.
+  if (NOISY_CONTEXT_NAME !== null) {
+    const { contexts, pickContext } = await import(
+      pathToFileURL(join(ROOT, 'evals', 'trigger', 'contexts.ts')).href
+    );
+    const ctx = pickContext(NOISY_CONTEXT_NAME || undefined);
+    NOISY_CONTEXT = ctx;
+    console.log(`noisy-context: ${ctx.name}`);
+    // Touch `contexts` so the import isn't elided/tree-shaken in some bundlers.
+    void contexts;
+  }
 
   console.log(
     `${experiments.length} experiment(s), ${suiteFiltered.length} eval(s), ` +

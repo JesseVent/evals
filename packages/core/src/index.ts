@@ -19,6 +19,7 @@ import {
   stepCountIs,
   type JSONValue,
   type LanguageModel,
+  type ModelMessage,
   type ToolSet,
 } from 'ai';
 import ts from 'typescript';
@@ -121,6 +122,12 @@ export type {
   TraceBadge,
   TraceViewerData,
 } from './trace-viewer.js';
+// Deterministic scorer factory for skill-trigger-quality evals (the trigger
+// suite): compares loaded skills vs a hand-authored expected set.
+export {
+  createSkillTriggerScorer,
+  loadedSkillsFromToolCalls,
+} from './skill-trigger-scorer.js';
 export type { AgentTranscriptParser } from './parsers/types.js';
 export type {
   ToolName,
@@ -368,6 +375,14 @@ export type AgentRunArgs = {
   userPrompt: string;
   tools?: ToolSet;
   mcpServers?: Record<string, McpServerConfig>;
+  /**
+   * Prior conversation injected before `userPrompt` to simulate a half-full,
+   * noisy context window (the trigger suite's `--noisy-context` mode). Only
+   * `aiSdkAgent` honors this: it sends `system` + `messages: [...priorMessages,
+   * {user}]` instead of `system` + `prompt`. CLI agents are one-shot and ignore
+   * it (the harness prepends a text block to their prompt instead).
+   */
+  priorMessages?: ModelMessage[];
   /**
    * Execution environment for CLI agents (Claude Code, Codex, …). In-process
    * agents like `aiSdkAgent` ignore it; CLI agents need it to run their binary,
@@ -633,8 +648,24 @@ export function aiSdkAgent(options: {
         ? await createAiSdkTools(args.mcpServers)
         : [];
       const toolCalls: ToolCallRecord[] = [];
+      // Seed the transcript with the system prompt, then any prior conversation
+      // (trigger suite noisy-context mode), then the user prompt. priorMessages
+      // are {user|assistant, string} from the distractor templates — non-string
+      // content is stringified defensively; a 'system' role would fold to 'user',
+      // but the templates never emit one.
+      const priorTranscript: TranscriptPart[] = (args.priorMessages ?? []).map(
+        (m) => ({
+          type: 'message' as const,
+          role: m.role === 'assistant' ? 'assistant' : ('user' as 'user'),
+          content:
+            typeof m.content === 'string'
+              ? m.content
+              : JSON.stringify(m.content),
+        })
+      );
       const transcript: TranscriptPart[] = [
         { type: 'message', role: 'system', content: args.systemPrompt },
+        ...priorTranscript,
         { type: 'message', role: 'user', content: args.userPrompt },
       ];
       const tools = mergeToolSets([
@@ -643,11 +674,16 @@ export function aiSdkAgent(options: {
       ]);
 
       try {
-        const result = await generateText({
+        // When prior context is supplied, send it as real turns before the user
+        // prompt; otherwise the plain one-shot prompt. `tools` and the
+        // discriminating prompt/messages key stay inline so generateText's
+        // overloaded generics resolve; the rest is shared boilerplate. Two
+        // calls because prompt and messages are mutually exclusive on the
+        // options union — a conditional spread would leave both optional and
+        // match no overload.
+        const common = {
           model: options.model,
           system: args.systemPrompt,
-          prompt: args.userPrompt,
-          tools,
           stopWhen: stepCountIs(MAX_STEPS),
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           timeout: { totalMs: args.timeoutSec * 1000 },
@@ -655,7 +691,10 @@ export function aiSdkAgent(options: {
             options.model.provider,
             options.providerOptions
           ),
-          experimental_onToolCallFinish: (event) => {
+          experimental_onToolCallFinish: (event: {
+            toolCall: { toolName: string; input: unknown };
+            output?: unknown;
+          }) => {
             const input = isRecord(event.toolCall.input)
               ? event.toolCall.input
               : {};
@@ -678,7 +717,17 @@ export function aiSdkAgent(options: {
               ts: Date.now(),
             });
           },
-        });
+        };
+        const result = args.priorMessages
+          ? await generateText({
+              ...common,
+              tools,
+              messages: [
+                ...args.priorMessages,
+                { role: 'user' as const, content: args.userPrompt },
+              ],
+            })
+          : await generateText({ ...common, tools, prompt: args.userPrompt });
 
         // Build the transcript from every step's content so the judge sees
         // all user-facing assistant text, not just the final step's text.

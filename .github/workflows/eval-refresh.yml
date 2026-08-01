@@ -214,6 +214,7 @@ jobs:
             case "$eval_suite" in
               benchmark) experiment_suites=(benchmark no-skills) ;;
               regression) experiment_suites=(regression) ;;
+              trigger) experiment_suites=(trigger) ;;
               *) continue ;;
             esac
 

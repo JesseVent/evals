@@ -48,6 +48,7 @@ export const experimentSuiteSchema = z.enum([
   'benchmark',
   'no-skills',
   'regression',
+  'trigger',
 ]);
 export const EXPERIMENT_SUITES = experimentSuiteSchema.options;
 export type ExperimentSuite = z.infer<typeof experimentSuiteSchema>;

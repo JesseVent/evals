@@ -1,5 +1,8 @@
 import { formatDuration, getTimelineData } from "@evilmartians/agent-prism-data"
-import type { TraceSpan } from "@evilmartians/agent-prism-types"
+import type {
+  TraceSpan,
+  TraceSpanCategory,
+} from "@evilmartians/agent-prism-types"
 import * as Collapsible from "@radix-ui/react-collapsible"
 import cn from "classnames"
 import type { FC, KeyboardEvent, MouseEvent } from "react"
@@ -54,20 +57,21 @@ interface SpanCardState {
 
 // ─── Left-border accent per span type (sequence signaling) ───
 
-const SPAN_ACCENT_COLORS: Record<string, string> = {
-  llm: "border-l-[#a78bfa]", // violet — AI thinking
-  agent: "border-l-[#818cf8]", // indigo — agent orchestration
-  tool: "border-l-[#3ECF8E]", // Supabase green — tool execution
-  chain: "border-l-[#67e8f9]", // cyan — chain step
+const SPAN_ACCENT_COLORS: Record<TraceSpanCategory, string> = {
+  llm_call: "border-l-[#a78bfa]", // violet — AI thinking
+  agent_invocation: "border-l-[#818cf8]", // indigo — agent orchestration
+  tool_execution: "border-l-[#3ECF8E]", // Supabase green — tool execution
+  chain_operation: "border-l-[#67e8f9]", // cyan — chain step
   retrieval: "border-l-[#93c5fd]", // blue — data fetch
   embedding: "border-l-[#3ECF8E]", // green — vector op
   guardrail: "border-l-[#f87171]", // red — safety check
+  create_agent: "border-l-[#818cf8]", // indigo — agent orchestration
   span: "border-l-[#93c5fd]", // blue — generic span
   event: "border-l-[#3ECF8E]", // green — event
   unknown: "border-l-[#94a3b8]", // slate — unknown
 }
 
-function getSpanAccentClass(type: string): string {
+function getSpanAccentClass(type: TraceSpanCategory): string {
   return SPAN_ACCENT_COLORS[type] ?? SPAN_ACCENT_COLORS.unknown
 }
 

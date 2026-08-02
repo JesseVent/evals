@@ -8,17 +8,18 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import type { ToolName } from './transcript/types.js';
+import type { ToolName, TokenUsage } from './transcript/types.js';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createMCPClient } from '@ai-sdk/mcp';
 import { Experimental_StdioMCPTransport as StdioMCPTransport } from '@ai-sdk/mcp/mcp-stdio';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI, openai } from '@ai-sdk/openai';
 import {
   Output,
   generateText,
   stepCountIs,
   type JSONValue,
   type LanguageModel,
+  type ModelMessage,
   type ToolSet,
 } from 'ai';
 import ts from 'typescript';
@@ -36,11 +37,9 @@ import {
 import type {
   AgentHarnessId,
   CheckResult,
-  EvalSuite,
   ExperimentDisplayMetadata,
   ExperimentSuite,
   ModelProvider,
-  ReasoningEffortLevel,
 } from './eval-metadata.js';
 import { reasoningEffortSchema } from './eval-metadata.js';
 import type { AgentMetadata, AgentSandbox } from './agents/types.js';
@@ -116,9 +115,23 @@ export type {
 export { createParser, supportedParsers } from './agents/registry.js';
 export { adaptTranscript } from './parsers/adapt.js';
 export type { AdaptedTranscript } from './parsers/adapt.js';
+// Eval run → AgentPrism trace tree (used by the web viewer's trace panel).
+export { evalResultToTraceSpans } from './trace-viewer.js';
+export type {
+  EvalResultTraceInput,
+  TraceBadge,
+  TraceViewerData,
+} from './trace-viewer.js';
+// Deterministic scorer factory for skill-trigger-quality evals (the trigger
+// suite): compares loaded skills vs a hand-authored expected set.
+export {
+  createSkillTriggerScorer,
+  loadedSkillsFromToolCalls,
+} from './skill-trigger-scorer.js';
 export type { AgentTranscriptParser } from './parsers/types.js';
 export type {
   ToolName,
+  TokenUsage,
   TranscriptEvent,
   ParsedTranscript,
 } from './transcript/types.js';
@@ -153,6 +166,23 @@ export type TranscriptPart =
       type: 'message';
       role: 'system' | 'user' | 'assistant';
       content: string;
+      /**
+       * Token usage for the turn that closed with this message, when it's an
+       * assistant message. Set only on whichever transcript part (message or
+       * tool_call) is the LAST one a turn produced — a turn is often
+       * tool-call-only (e.g. loading a skill), so usage isn't always on text.
+       */
+      usage?: TokenUsage;
+      /**
+       * Real wall-clock epoch ms when this part was recorded, when the agent
+       * exposes one — ai-sdk's `onStepFinish` (per-step, not per-part: a step
+       * with multiple parts only carries ts on its last one, mirroring
+       * `usage`) or a CLI agent's own JSONL timestamp. Absent for synthetic
+       * parts (the seeded system/user prompt) and for agents that don't
+       * timestamp events (Codex's `--json` stream has none). Used to compute
+       * real per-span duration in trace-viewer.ts — never fabricated.
+       */
+      ts?: number;
     }
   | {
       type: 'tool_call';
@@ -160,6 +190,10 @@ export type TranscriptPart =
       input: Record<string, unknown>;
       output?: unknown;
       error?: string;
+      /** Token usage, when this tool call is the turn's last part (see above). */
+      usage?: TokenUsage;
+      /** Real wall-clock epoch ms this call finished, when known (see above). */
+      ts?: number;
     };
 
 export type TranscriptSerializationOptions = {
@@ -364,6 +398,14 @@ export type AgentRunArgs = {
   tools?: ToolSet;
   mcpServers?: Record<string, McpServerConfig>;
   /**
+   * Prior conversation injected before `userPrompt` to simulate a half-full,
+   * noisy context window (the trigger suite's `--noisy-context` mode). Only
+   * `aiSdkAgent` honors this: it sends `system` + `messages: [...priorMessages,
+   * {user}]` instead of `system` + `prompt`. CLI agents are one-shot and ignore
+   * it (the harness prepends a text block to their prompt instead).
+   */
+  priorMessages?: ModelMessage[];
+  /**
    * Execution environment for CLI agents (Claude Code, Codex, …). In-process
    * agents like `aiSdkAgent` ignore it; CLI agents need it to run their binary,
    * edit the workspace, and read back their transcript. Provided by the
@@ -560,7 +602,12 @@ const judgeOutputSchema = z.object({
   notes: z.string(),
 });
 
-const DEFAULT_JUDGE_MODEL = openai('gpt-5.5');
+const DEFAULT_JUDGE_MODEL = process.env.OPENROUTER_API_KEY
+  ? createOpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY,
+    })('openai/gpt-5.5')
+  : openai('gpt-5.5');
 const DEFAULT_JUDGE_PROVIDER_OPTIONS: AiSdkProviderOptions = {
   openai: {
     reasoningEffort: 'low',
@@ -589,12 +636,27 @@ export async function judge(args: JudgeInput): Promise<JudgeResult> {
   };
 }
 
+/** ai-sdk's `LanguageModelUsage` (per-step) → the shared `TokenUsage` shape. */
+function toTokenUsage(usage: {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  inputTokenDetails?: { cacheReadTokens?: number };
+}): TokenUsage {
+  return {
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalTokens: usage.totalTokens,
+    cacheReadTokens: usage.inputTokenDetails?.cacheReadTokens,
+  };
+}
+
 function getModelProvider(provider: string, modelId: string): ModelProvider {
-  if (provider.startsWith('anthropic') || modelId.startsWith('claude-')) {
+  if (provider.startsWith('anthropic') || modelId.includes('claude-')) {
     return 'anthropic';
   }
 
-  if (provider.startsWith('openai') || modelId.startsWith('gpt-')) {
+  if (provider.startsWith('openai') || modelId.includes('gpt-')) {
     return 'openai';
   }
 
@@ -609,7 +671,12 @@ export function aiSdkAgent(options: {
   const configuredEffort = po?.anthropic?.effort ?? po?.openai?.reasoningEffort;
   const reasoningEffort =
     reasoningEffortSchema.safeParse(configuredEffort).data;
-  const modelId = options.model.modelId;
+  // OpenRouter-routed models carry a vendor-prefixed slug (e.g.
+  // "anthropic/claude-sonnet-5") required on the wire, but that's a transport
+  // detail — direct-provider runs of the same model report the bare id (e.g.
+  // "claude-sonnet-5"). Normalize so results/labels for one experiment don't
+  // fork depending on which transport happened to run them.
+  const modelId = options.model.modelId.replace(/^[\w-]+\//, '');
   return {
     id: 'ai-sdk',
     modelId,
@@ -628,8 +695,24 @@ export function aiSdkAgent(options: {
         ? await createAiSdkTools(args.mcpServers)
         : [];
       const toolCalls: ToolCallRecord[] = [];
+      // Seed the transcript with the system prompt, then any prior conversation
+      // (trigger suite noisy-context mode), then the user prompt. priorMessages
+      // are {user|assistant, string} from the distractor templates — non-string
+      // content is stringified defensively; a 'system' role would fold to 'user',
+      // but the templates never emit one.
+      const priorTranscript: TranscriptPart[] = (args.priorMessages ?? []).map(
+        (m) => ({
+          type: 'message' as const,
+          role: m.role === 'assistant' ? 'assistant' : ('user' as 'user'),
+          content:
+            typeof m.content === 'string'
+              ? m.content
+              : JSON.stringify(m.content),
+        })
+      );
       const transcript: TranscriptPart[] = [
         { type: 'message', role: 'system', content: args.systemPrompt },
+        ...priorTranscript,
         { type: 'message', role: 'user', content: args.userPrompt },
       ];
       const tools = mergeToolSets([
@@ -638,19 +721,37 @@ export function aiSdkAgent(options: {
       ]);
 
       try {
-        const result = await generateText({
+        // Real wall-clock time each step finished, captured live as
+        // generateText runs (index i matches result.steps[i]) — the only
+        // per-step timing ai-sdk exposes; a step with multiple parts (e.g.
+        // text then a tool call) can't be split finer than this, same
+        // granularity limit as step.usage.
+        const stepTimestamps: number[] = [];
+
+        // When prior context is supplied, send it as real turns before the user
+        // prompt; otherwise the plain one-shot prompt. `tools` and the
+        // discriminating prompt/messages key stay inline so generateText's
+        // overloaded generics resolve; the rest is shared boilerplate. Two
+        // calls because prompt and messages are mutually exclusive on the
+        // options union — a conditional spread would leave both optional and
+        // match no overload.
+        const common = {
           model: options.model,
           system: args.systemPrompt,
-          prompt: args.userPrompt,
-          tools,
           stopWhen: stepCountIs(MAX_STEPS),
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           timeout: { totalMs: args.timeoutSec * 1000 },
+          onStepFinish: () => {
+            stepTimestamps.push(Date.now());
+          },
           providerOptions: withProviderDefaults(
             options.model.provider,
             options.providerOptions
           ),
-          experimental_onToolCallFinish: (event) => {
+          experimental_onToolCallFinish: (event: {
+            toolCall: { toolName: string; input: unknown };
+            output?: unknown;
+          }) => {
             const input = isRecord(event.toolCall.input)
               ? event.toolCall.input
               : {};
@@ -673,7 +774,17 @@ export function aiSdkAgent(options: {
               ts: Date.now(),
             });
           },
-        });
+        };
+        const result = args.priorMessages
+          ? await generateText({
+              ...common,
+              tools,
+              messages: [
+                ...args.priorMessages,
+                { role: 'user' as const, content: args.userPrompt },
+              ],
+            })
+          : await generateText({ ...common, tools, prompt: args.userPrompt });
 
         // Build the transcript from every step's content so the judge sees
         // all user-facing assistant text, not just the final step's text.
@@ -696,7 +807,16 @@ export function aiSdkAgent(options: {
           }
         }
 
-        for (const step of result.steps) {
+        for (const [stepIndex, step] of result.steps.entries()) {
+          const usage = toTokenUsage(step.usage);
+          const ts = stepTimestamps[stepIndex];
+          // A step's usage covers everything it produced, but a step is often
+          // tool-call-only (no text) — e.g. the turn that loads a skill. Attach
+          // usage to whichever transcript-emitting part is LAST in the step
+          // (text or tool-call), not unconditionally to the first text part,
+          // so a tool-call-only step's cost isn't silently dropped. Same for
+          // `ts` — it's the whole step's timestamp, not a per-part one.
+          const pushed: number[] = [];
           for (const part of step.content) {
             if (part.type === 'text') {
               const content = part.text.trim();
@@ -706,6 +826,7 @@ export function aiSdkAgent(options: {
                   role: 'assistant',
                   content,
                 });
+                pushed.push(transcript.length - 1);
               }
             } else if (part.type === 'tool-call') {
               const resolved = toolOutputs.get(part.toolCallId);
@@ -716,7 +837,12 @@ export function aiSdkAgent(options: {
                 output: resolved?.output,
                 error: resolved?.error,
               });
+              pushed.push(transcript.length - 1);
             }
+          }
+          const lastIdx = pushed[pushed.length - 1];
+          if (lastIdx !== undefined) {
+            transcript[lastIdx] = { ...transcript[lastIdx], usage, ts };
           }
         }
 
@@ -1196,7 +1322,11 @@ const MAX_OUTPUT_TOKENS = 4096;
 const RUNTIME_URL = 'http://supabase-evals.local';
 
 function assertProviderReady(provider: string): void {
-  if (provider.startsWith('openai') && !process.env.OPENAI_API_KEY) {
+  if (
+    provider.startsWith('openai') &&
+    !process.env.OPENAI_API_KEY &&
+    !process.env.OPENROUTER_API_KEY
+  ) {
     throw new Error(
       'Missing OpenAI credentials. Set OPENAI_API_KEY before running OpenAI evals.'
     );

@@ -1,0 +1,96 @@
+{
+  "traceRecord": {
+    "id": "investigate-trigger-security-23",
+    "name": "investigate-trigger-security-23",
+    "spansCount": 6,
+    "durationMs": 0,
+    "agentDescription": "gpt-5.6-luna",
+    "totalTokens": 2469
+  },
+  "spans": [
+    {
+      "id": "eval:investigate-trigger-security-23",
+      "title": "investigate-trigger-security-23",
+      "startTime": "2026-08-01T16:31:47.344Z",
+      "endTime": "2026-08-01T16:31:47.344Z",
+      "duration": 0,
+      "type": "agent_invocation",
+      "status": "error",
+      "raw": "What would you like help with for your multi-tenant app—database schema, tenant isolation/RLS policies, authentication, or something else?",
+      "output": "What would you like help with for your multi-tenant app—database schema, tenant isolation/RLS policies, authentication, or something else?",
+      "children": [
+        {
+          "id": "investigate-trigger-security-23-msg-1",
+          "title": "System",
+          "startTime": "2026-08-01T16:31:47.344Z",
+          "endTime": "2026-08-01T16:31:47.344Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "You are an agent solving a Supabase eval task. Use the provided tools to inspect and modify the project. When you are done, end your turn with a short summary of what you did (or for audit tasks, your findings).\n\n## Available skills\n\nThe following agent skills are available. Only their names and descriptions are shown — the full instructions are not loaded yet. When a task matches a skill, call the `load_skill` tool with its name to load its full instructions.\n\n- supabase: Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, declarative schemas, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector).\n- supabase-postgres-best-practices: Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and columns (including choosing column types), schema design, migrations and declarative schema files, RLS policies and the tests that verify them, indexes, triggers, database functions, queues and scheduled jobs (pg_cron, pgmq), vector/semantic search (pgvector), and restoring dumps (pg_restore) or importing data. Also load it when diagnosing slow queries, high CPU, timeouts, EXPLAIN plans, connection exhaustion, locking, bloat, or rows visible to the wrong user or tenant. This is not just a performance guide — schema, migration, security, and SQL authoring tasks need these rules too, even for a one-column change or a single query.",
+          "input": "You are an agent solving a Supabase eval task. Use the provided tools to inspect and modify the project. When you are done, end your turn with a short summary of what you did (or for audit tasks, your findings).\n\n## Available skills\n\nThe following agent skills are available. Only their names and descriptions are shown — the full instructions are not loaded yet. When a task matches a skill, call the `load_skill` tool with its name to load its full instructions.\n\n- supabase: Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, declarative schemas, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector).\n- supabase-postgres-best-practices: Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and columns (including choosing column types), schema design, migrations and declarative schema files, RLS policies and the tests that verify them, indexes, triggers, database functions, queues and scheduled jobs (pg_cron, pgmq), vector/semantic search (pgvector), and restoring dumps (pg_restore) or importing data. Also load it when diagnosing slow queries, high CPU, timeouts, EXPLAIN plans, connection exhaustion, locking, bloat, or rows visible to the wrong user or tenant. This is not just a performance guide — schema, migration, security, and SQL authoring tasks need these rules too, even for a one-column change or a single query."
+        },
+        {
+          "id": "investigate-trigger-security-23-msg-2",
+          "title": "User",
+          "startTime": "2026-08-01T16:31:47.344Z",
+          "endTime": "2026-08-01T16:31:47.344Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "I'm building a multi-tenant app",
+          "input": "I'm building a multi-tenant app"
+        },
+        {
+          "id": "investigate-trigger-security-23-llm-3",
+          "title": "Assistant",
+          "startTime": "2026-08-01T16:31:47.344Z",
+          "endTime": "2026-08-01T16:31:47.344Z",
+          "duration": 0,
+          "type": "llm_call",
+          "status": "success",
+          "raw": "What would you like help with for your multi-tenant app—database schema, tenant isolation/RLS policies, authentication, or something else?",
+          "output": "What would you like help with for your multi-tenant app—database schema, tenant isolation/RLS policies, authentication, or something else?",
+          "tokensCount": 2469
+        },
+        {
+          "id": "investigate-trigger-security-23-check-4",
+          "title": "Check passed: correctly skipped supabase",
+          "startTime": "2026-08-01T16:31:47.344Z",
+          "endTime": "2026-08-01T16:31:47.344Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "",
+          "output": ""
+        },
+        {
+          "id": "investigate-trigger-security-23-check-5",
+          "title": "Check failed: loaded supabase-postgres-best-practices",
+          "startTime": "2026-08-01T16:31:47.344Z",
+          "endTime": "2026-08-01T16:31:47.344Z",
+          "duration": 0,
+          "type": "event",
+          "status": "error",
+          "raw": "expected supabase-postgres-best-practices to load; it did not",
+          "output": "expected supabase-postgres-best-practices to load; it did not"
+        }
+      ],
+      "tokensCount": 2469
+    }
+  ],
+  "badges": [
+    {
+      "label": "Failed",
+      "tone": "error"
+    },
+    {
+      "label": "0/2 skills",
+      "tone": "neutral"
+    },
+    {
+      "label": "gpt-5.6-luna",
+      "tone": "neutral"
+    }
+  ]
+}

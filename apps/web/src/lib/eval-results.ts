@@ -43,6 +43,9 @@ export type JourneyStage = (typeof JOURNEY_STAGES)[number]["id"]
 /** Bucket key for runs whose eval declares no product. */
 export const UNASSIGNED_PRODUCT = "__unassigned_product__"
 
+// ponytail: "trigger" is a real EvalSuite (see eval-metadata.ts) but has no
+// exported eval-results.json rows yet — add it here once `pnpm eval --suite
+// trigger` has actually been run and exported.
 export const EXPERIMENT_SUITES = ["benchmark", "no-skills"] as const
 
 export type ExperimentSuite = (typeof EXPERIMENT_SUITES)[number]

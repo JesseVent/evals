@@ -1,0 +1,129 @@
+{
+  "traceRecord": {
+    "id": "investigate-trigger-schema-18",
+    "name": "investigate-trigger-schema-18",
+    "spansCount": 8,
+    "durationMs": 6793,
+    "agentDescription": "gpt-5.6-luna",
+    "totalTokens": 3494
+  },
+  "spans": [
+    {
+      "id": "eval:investigate-trigger-schema-18",
+      "title": "investigate-trigger-schema-18",
+      "startTime": "2026-08-01T16:31:13.270Z",
+      "endTime": "2026-08-01T16:31:20.063Z",
+      "duration": 6793,
+      "type": "agent_invocation",
+      "status": "success",
+      "raw": "The most common model is an **adjacency list**: each row stores its parent.\n\n```sql\ncreate table categories (\n  id        bigint generated always as identity primary key,\n  parent_id bigint references categories(id) on delete cascade,\n  name      text not null,\n  unique (parent_id, name)\n);\n\ncreate index categories_parent_id_idx on categories(parent_id);\n```\n\nRoots have `parent_id = NULL`.\n\n### Query an entire subtree\n\n```sql\nwith recursive tree as (\n  select id, parent_id, name, 0 as depth\n  from categories\n  where id = 1\n\n  union all\n\n  select c.id, c.parent_id, c.name, t.depth + 1\n  from categories c\n  join tree t on c.parent_id = t.id\n)\nselect *\nfrom tree\norder by depth, name;\n```\n\n### Query ancestors\n\n```sql\nwith recursive ancestors as (\n  select id, parent_id, name\n  from categories\n  where id = 42\n\n  union all\n\n  select c.id, c.parent_id, c.name\n  from categories c\n  join ancestors a on a.parent_id = c.id\n)\nselect *\nfrom ancestors;\n```\n\n### Which model to choose?\n\n- **Adjacency list**: best default; simple inserts and moves.\n- **Materialized path / `ltree`**: excellent for frequent subtree queries.\n- **Closure table**: useful when ancestor/descendant queries must be very fast.\n- **Nested sets**: generally avoid for mutable trees because inserts and moves are expensive.\n\nPostgres does not automatically prevent cycles such as making a node its own descendant. Enforce this in application logic or with a trigger/transaction that checks descendants before changing `parent_id`.",
+      "output": "The most common model is an **adjacency list**: each row stores its parent.\n\n```sql\ncreate table categories (\n  id        bigint generated always as identity primary key,\n  parent_id bigint references categories(id) on delete cascade,\n  name      text not null,\n  unique (parent_id, name)\n);\n\ncreate index categories_parent_id_idx on categories(parent_id);\n```\n\nRoots have `parent_id = NULL`.\n\n### Query an entire subtree\n\n```sql\nwith recursive tree as (\n  select id, parent_id, name, 0 as depth\n  from categories\n  where id = 1\n\n  union all\n\n  select c.id, c.parent_id, c.name, t.depth + 1\n  from categories c\n  join tree t on c.parent_id = t.id\n)\nselect *\nfrom tree\norder by depth, name;\n```\n\n### Query ancestors\n\n```sql\nwith recursive ancestors as (\n  select id, parent_id, name\n  from categories\n  where id = 42\n\n  union all\n\n  select c.id, c.parent_id, c.name\n  from categories c\n  join ancestors a on a.parent_id = c.id\n)\nselect *\nfrom ancestors;\n```\n\n### Which model to choose?\n\n- **Adjacency list**: best default; simple inserts and moves.\n- **Materialized path / `ltree`**: excellent for frequent subtree queries.\n- **Closure table**: useful when ancestor/descendant queries must be very fast.\n- **Nested sets**: generally avoid for mutable trees because inserts and moves are expensive.\n\nPostgres does not automatically prevent cycles such as making a node its own descendant. Enforce this in application logic or with a trigger/transaction that checks descendants before changing `parent_id`.",
+      "children": [
+        {
+          "id": "investigate-trigger-schema-18-msg-1",
+          "title": "System",
+          "startTime": "2026-08-01T16:31:13.270Z",
+          "endTime": "2026-08-01T16:31:13.270Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "You are an agent solving a Supabase eval task. Use the provided tools to inspect and modify the project. When you are done, end your turn with a short summary of what you did (or for audit tasks, your findings).\n\n## Available skills\n\nThe following agent skills are available. Only their names and descriptions are shown — the full instructions are not loaded yet. When a task matches a skill, call the `load_skill` tool with its name to load its full instructions.\n\n- supabase: Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, declarative schemas, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector).\n- supabase-postgres-best-practices: Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and columns (including choosing column types), schema design, migrations and declarative schema files, RLS policies and the tests that verify them, indexes, triggers, database functions, queues and scheduled jobs (pg_cron, pgmq), vector/semantic search (pgvector), and restoring dumps (pg_restore) or importing data. Also load it when diagnosing slow queries, high CPU, timeouts, EXPLAIN plans, connection exhaustion, locking, bloat, or rows visible to the wrong user or tenant. This is not just a performance guide — schema, migration, security, and SQL authoring tasks need these rules too, even for a one-column change or a single query.",
+          "input": "You are an agent solving a Supabase eval task. Use the provided tools to inspect and modify the project. When you are done, end your turn with a short summary of what you did (or for audit tasks, your findings).\n\n## Available skills\n\nThe following agent skills are available. Only their names and descriptions are shown — the full instructions are not loaded yet. When a task matches a skill, call the `load_skill` tool with its name to load its full instructions.\n\n- supabase: Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, declarative schemas, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector).\n- supabase-postgres-best-practices: Postgres best practices maintained by Supabase, for Postgres running anywhere. Load this skill BEFORE writing or changing anything that lives in a Postgres database: creating or altering tables and columns (including choosing column types), schema design, migrations and declarative schema files, RLS policies and the tests that verify them, indexes, triggers, database functions, queues and scheduled jobs (pg_cron, pgmq), vector/semantic search (pgvector), and restoring dumps (pg_restore) or importing data. Also load it when diagnosing slow queries, high CPU, timeouts, EXPLAIN plans, connection exhaustion, locking, bloat, or rows visible to the wrong user or tenant. This is not just a performance guide — schema, migration, security, and SQL authoring tasks need these rules too, even for a one-column change or a single query."
+        },
+        {
+          "id": "investigate-trigger-schema-18-msg-2",
+          "title": "User",
+          "startTime": "2026-08-01T16:31:13.270Z",
+          "endTime": "2026-08-01T16:31:13.270Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "how do I model a tree hierarchy in postgres",
+          "input": "how do I model a tree hierarchy in postgres"
+        },
+        {
+          "id": "investigate-trigger-schema-18-tool-3",
+          "title": "Tool: load_skill",
+          "startTime": "2026-08-01T16:31:13.270Z",
+          "endTime": "2026-08-01T16:31:16.058Z",
+          "duration": 2788,
+          "type": "tool_execution",
+          "status": "success",
+          "raw": "{\n  \"instructions\": \"# Supabase Postgres Best Practices\\n\\nComprehensive performance optimization guide for Postgres, maintained by Supabase. Contains rules across 8 categories, prioritized by impact to guide automated query optimization and schema design.\\n\\n## When to Apply\\n\\nReference these guidelines when:\\n- Writing SQL queries or designing schemas\\n- Implementing indexes or query optimization\\n- Reviewing database performance issues\\n- Configuring connection pooling or scaling\\n- Optimizing for Postgres-specific features\\n- Working with Row-Level Security (RLS)\\n\\n## Rule Categories by Priority\\n\\n| Priority | Category | Impact | Prefix |\\n|----------|----------|--------|--------|\\n| 1 | Query Performance | CRITICAL | `query-` |\\n| 2 | Connection Management | CRITICAL | `conn-` |\\n| 3 | Security & RLS | CRITICAL | `security-` |\\n| 4 | Schema Design | HIGH | `schema-` |\\n| 5 | Concurrency & Locking | MEDIUM-HIGH | `lock-` |\\n| 6 | Data Access Patterns | MEDIUM | `data-` |\\n| 7 | Monitoring & Diagnostics | LOW-MEDIUM | `monitor-` |\\n| 8 | Advanced Features | LOW | `advanced-` |\\n\\n## How to Use\\n\\nRead individual rule files for detailed explanations and SQL examples:\\n\\n```\\nreferences/query-missing-indexes.md\\nreferences/query-partial-indexes.md\\nreferences/_sections.md\\n```\\n\\nEach rule file contains:\\n- Brief explanation of why it matters\\n- Incorrect SQL example with explanation\\n- Correct SQL example with explanation\\n- Optional EXPLAIN output or metrics\\n- Additional context and references\\n- Supabase-specific notes (when applicable)\\n\\n## References\\n\\n- https://www.postgresql.org/docs/current/\\n- https://supabase.com/docs\\n- https://wiki.postgresql.org/wiki/Performance_Optimization\\n- https://supabase.com/docs/guides/database/overview\\n- https://supabase.com/docs/guides/auth/row-level-security\"\n}",
+          "input": "{\n  \"name\": \"supabase-postgres-best-practices\"\n}",
+          "output": "{\n  \"instructions\": \"# Supabase Postgres Best Practices\\n\\nComprehensive performance optimization guide for Postgres, maintained by Supabase. Contains rules across 8 categories, prioritized by impact to guide automated query optimization and schema design.\\n\\n## When to Apply\\n\\nReference these guidelines when:\\n- Writing SQL queries or designing schemas\\n- Implementing indexes or query optimization\\n- Reviewing database performance issues\\n- Configuring connection pooling or scaling\\n- Optimizing for Postgres-specific features\\n- Working with Row-Level Security (RLS)\\n\\n## Rule Categories by Priority\\n\\n| Priority | Category | Impact | Prefix |\\n|----------|----------|--------|--------|\\n| 1 | Query Performance | CRITICAL | `query-` |\\n| 2 | Connection Management | CRITICAL | `conn-` |\\n| 3 | Security & RLS | CRITICAL | `security-` |\\n| 4 | Schema Design | HIGH | `schema-` |\\n| 5 | Concurrency & Locking | MEDIUM-HIGH | `lock-` |\\n| 6 | Data Access Patterns | MEDIUM | `data-` |\\n| 7 | Monitoring & Diagnostics | LOW-MEDIUM | `monitor-` |\\n| 8 | Advanced Features | LOW | `advanced-` |\\n\\n## How to Use\\n\\nRead individual rule files for detailed explanations and SQL examples:\\n\\n```\\nreferences/query-missing-indexes.md\\nreferences/query-partial-indexes.md\\nreferences/_sections.md\\n```\\n\\nEach rule file contains:\\n- Brief explanation of why it matters\\n- Incorrect SQL example with explanation\\n- Correct SQL example with explanation\\n- Optional EXPLAIN output or metrics\\n- Additional context and references\\n- Supabase-specific notes (when applicable)\\n\\n## References\\n\\n- https://www.postgresql.org/docs/current/\\n- https://supabase.com/docs\\n- https://wiki.postgresql.org/wiki/Performance_Optimization\\n- https://supabase.com/docs/guides/database/overview\\n- https://supabase.com/docs/guides/auth/row-level-security\"\n}",
+          "attributes": [
+            {
+              "key": "skill",
+              "value": {
+                "stringValue": "supabase-postgres-best-practices"
+              }
+            }
+          ],
+          "tokensCount": 542
+        },
+        {
+          "id": "investigate-trigger-schema-18-tool-4",
+          "title": "Tool: search_docs",
+          "startTime": "2026-08-01T16:31:16.058Z",
+          "endTime": "2026-08-01T16:31:20.063Z",
+          "duration": 4005,
+          "type": "tool_execution",
+          "status": "success",
+          "raw": "{\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{\\\"result\\\":{\\\"searchDocs\\\":{\\\"nodes\\\":[]}}}\"\n    }\n  ],\n  \"isError\": false\n}",
+          "input": "{\n  \"graphql_query\": \"query { searchDocs(query: \\\"Postgres hierarchical tree data adjacency list recursive CTE ltree\\\", limit: 5) { nodes { ... on Guide { title href content } ... on ClientLibraryFunctionReference { title href content } } } }\"\n}",
+          "output": "{\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{\\\"result\\\":{\\\"searchDocs\\\":{\\\"nodes\\\":[]}}}\"\n    }\n  ],\n  \"isError\": false\n}"
+        },
+        {
+          "id": "investigate-trigger-schema-18-llm-5",
+          "title": "Assistant",
+          "startTime": "2026-08-01T16:31:20.063Z",
+          "endTime": "2026-08-01T16:31:20.063Z",
+          "duration": 0,
+          "type": "llm_call",
+          "status": "success",
+          "raw": "The most common model is an **adjacency list**: each row stores its parent.\n\n```sql\ncreate table categories (\n  id        bigint generated always as identity primary key,\n  parent_id bigint references categories(id) on delete cascade,\n  name      text not null,\n  unique (parent_id, name)\n);\n\ncreate index categories_parent_id_idx on categories(parent_id);\n```\n\nRoots have `parent_id = NULL`.\n\n### Query an entire subtree\n\n```sql\nwith recursive tree as (\n  select id, parent_id, name, 0 as depth\n  from categories\n  where id = 1\n\n  union all\n\n  select c.id, c.parent_id, c.name, t.depth + 1\n  from categories c\n  join tree t on c.parent_id = t.id\n)\nselect *\nfrom tree\norder by depth, name;\n```\n\n### Query ancestors\n\n```sql\nwith recursive ancestors as (\n  select id, parent_id, name\n  from categories\n  where id = 42\n\n  union all\n\n  select c.id, c.parent_id, c.name\n  from categories c\n  join ancestors a on a.parent_id = c.id\n)\nselect *\nfrom ancestors;\n```\n\n### Which model to choose?\n\n- **Adjacency list**: best default; simple inserts and moves.\n- **Materialized path / `ltree`**: excellent for frequent subtree queries.\n- **Closure table**: useful when ancestor/descendant queries must be very fast.\n- **Nested sets**: generally avoid for mutable trees because inserts and moves are expensive.\n\nPostgres does not automatically prevent cycles such as making a node its own descendant. Enforce this in application logic or with a trigger/transaction that checks descendants before changing `parent_id`.",
+          "output": "The most common model is an **adjacency list**: each row stores its parent.\n\n```sql\ncreate table categories (\n  id        bigint generated always as identity primary key,\n  parent_id bigint references categories(id) on delete cascade,\n  name      text not null,\n  unique (parent_id, name)\n);\n\ncreate index categories_parent_id_idx on categories(parent_id);\n```\n\nRoots have `parent_id = NULL`.\n\n### Query an entire subtree\n\n```sql\nwith recursive tree as (\n  select id, parent_id, name, 0 as depth\n  from categories\n  where id = 1\n\n  union all\n\n  select c.id, c.parent_id, c.name, t.depth + 1\n  from categories c\n  join tree t on c.parent_id = t.id\n)\nselect *\nfrom tree\norder by depth, name;\n```\n\n### Query ancestors\n\n```sql\nwith recursive ancestors as (\n  select id, parent_id, name\n  from categories\n  where id = 42\n\n  union all\n\n  select c.id, c.parent_id, c.name\n  from categories c\n  join ancestors a on a.parent_id = c.id\n)\nselect *\nfrom ancestors;\n```\n\n### Which model to choose?\n\n- **Adjacency list**: best default; simple inserts and moves.\n- **Materialized path / `ltree`**: excellent for frequent subtree queries.\n- **Closure table**: useful when ancestor/descendant queries must be very fast.\n- **Nested sets**: generally avoid for mutable trees because inserts and moves are expensive.\n\nPostgres does not automatically prevent cycles such as making a node its own descendant. Enforce this in application logic or with a trigger/transaction that checks descendants before changing `parent_id`.",
+          "tokensCount": 3494
+        },
+        {
+          "id": "investigate-trigger-schema-18-check-6",
+          "title": "Check passed: correctly skipped supabase",
+          "startTime": "2026-08-01T16:31:20.063Z",
+          "endTime": "2026-08-01T16:31:20.063Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "",
+          "output": ""
+        },
+        {
+          "id": "investigate-trigger-schema-18-check-7",
+          "title": "Check passed: loaded supabase-postgres-best-practices",
+          "startTime": "2026-08-01T16:31:20.063Z",
+          "endTime": "2026-08-01T16:31:20.063Z",
+          "duration": 0,
+          "type": "event",
+          "status": "success",
+          "raw": "",
+          "output": ""
+        }
+      ],
+      "tokensCount": 3494
+    }
+  ],
+  "badges": [
+    {
+      "label": "Passed",
+      "tone": "success"
+    },
+    {
+      "label": "1/2 skills",
+      "tone": "success"
+    },
+    {
+      "label": "gpt-5.6-luna",
+      "tone": "neutral"
+    }
+  ]
+}

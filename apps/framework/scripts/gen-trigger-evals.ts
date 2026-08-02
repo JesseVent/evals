@@ -52,10 +52,8 @@ function topicFor(category: Category): string {
       return 'rls';
     case 'schema':
     case 'performance':
-    case 'locking':
     case 'data-ops':
       return 'sql';
-    case 'connections':
     case 'monitoring':
     case 'general':
       return 'observability';

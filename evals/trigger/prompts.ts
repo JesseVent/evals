@@ -2,9 +2,7 @@ export type Category =
   | 'schema'
   | 'security'
   | 'performance'
-  | 'connections'
   | 'data-ops'
-  | 'locking'
   | 'monitoring'
   | 'general';
 

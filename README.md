@@ -106,7 +106,7 @@ motivation: AI-123
 ```
 
 Allowed metadata values are defined in `packages/core/src/eval-metadata.ts`.
-`suite` is required on every eval (`benchmark`, `regression`, or `other`). Run an eval suite with `--suite regression` / `--suite other`. Select experiment suites separately with `--experiment-suite benchmark` or `--experiment-suite no-skills`.
+`suite` is required on every eval (`benchmark`, `regression`, `trigger`, or `other`). Run an eval suite with `--suite regression` / `--suite other` / `--suite trigger`. Select experiment suites separately with `--experiment-suite benchmark`, `--experiment-suite no-skills`, or `--experiment-suite trigger`.
 
 ## Eval Modes
 
@@ -147,6 +147,41 @@ Both runtimes load skills lazily ([progressive disclosure](https://ai-sdk.dev/co
 
 - **Local-stack (sandbox) mode:** skills are installed into the workspace with [Vercel's `skills` CLI](https://github.com/vercel-labs/skills) (baked into the sandbox image, sourced from the local `skills/` directory — never the network) under `.claude/skills/`. When a task matches, the agent reads `.claude/skills/<name>/SKILL.md` (and any files it references) with its file tools.
 - **Tools mode:** no filesystem, so a `load_skill` tool returns a skill's full instructions when the agent calls it with the skill's name.
+
+### Skill trigger suite
+
+Skill utility (does having a skill help?) and skill trigger quality (does the model actually load it on the right prompts?) are different questions — a skill can be great advice that never fires, or fire indiscriminately and drown unrelated prompts in irrelevant context. The `trigger` suite measures the second question directly.
+
+`evals/investigate-trigger-<category>-<nn>/` holds 97 short, single-turn prompts spanning 8 Supabase/Postgres categories, generated from `evals/trigger/prompts.ts` plus a hand-authored expected-skill set per prompt in `evals/trigger/golden.ts` (the ground truth). The scorer (`createSkillTriggerScorer` in `packages/core/src/skill-trigger-scorer.ts`) is deterministic: it diffs which skills the agent actually loaded (via real `load_skill` tool calls, not a simulated prediction) against the expected set, and fails on either a missed load or an unexpected one.
+
+Regenerate the eval dirs after editing `evals/trigger/{prompts,golden}.ts` (commit the output — reviewers see real eval dirs, not runtime codegen):
+
+```bash
+cd apps/framework && node --import tsx/esm scripts/gen-trigger-evals.ts
+```
+
+Run the suite:
+
+```bash
+pnpm eval -- --suite trigger --experiment-suite trigger
+```
+
+Measure trigger quality under a noisy, half-full context window by prepending one of the distractor conversations in `evals/trigger/contexts.ts`:
+
+```bash
+pnpm eval -- --suite trigger --experiment trigger-claude-sonnet-5 --noisy-context ts-refactor
+# omit the name to pick one at random:
+pnpm eval -- --suite trigger --experiment trigger-claude-sonnet-5 --noisy-context
+```
+
+`experiments/trigger-claude-sonnet-5.ts` and `experiments/trigger-no-skills-claude-sonnet-5.ts` run the same 97 evals with and without skills available. After both have result files, cross-tabulate "activated" against "helped" — and optionally diff clean vs. noisy runs — with:
+
+```bash
+cd apps/framework && node --import tsx/esm scripts/trigger-report.ts \
+  --results=trigger-claude-sonnet-5 \
+  --no-skills=trigger-no-skills-claude-sonnet-5 \
+  --diff=trigger-claude-sonnet-5-noisy
+```
 
 ## Framework Checks
 

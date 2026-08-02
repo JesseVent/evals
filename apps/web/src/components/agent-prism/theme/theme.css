@@ -15,7 +15,11 @@
   --agentprism-foreground: var(--foreground);
   --agentprism-primary: var(--primary);
   --agentprism-primary-foreground: var(--primary-foreground);
-  --agentprism-secondary: var(--secondary);
+  /* Foreground-tinted overlay, not the app's own `--secondary` — that token
+     lightens off `--background` (an "elevation" trick), which clips to white
+     in light mode where the background is already near-max lightness. This
+     stays visibly distinct from the surface in both themes. */
+  --agentprism-secondary: oklch(from var(--foreground) l c h / 8%);
   --agentprism-secondary-foreground: var(--secondary-foreground);
   --agentprism-muted: var(--muted);
   --agentprism-muted-foreground: var(--muted-foreground);
@@ -25,7 +29,7 @@
   /* Brand: the actual Supabase green, not AgentPrism's default purple. */
   --agentprism-brand: var(--primary);
   --agentprism-brand-foreground: var(--primary-foreground);
-  --agentprism-brand-secondary: var(--secondary);
+  --agentprism-brand-secondary: oklch(from var(--foreground) l c h / 8%);
   --agentprism-brand-secondary-foreground: var(--secondary-foreground);
 
   /* Borders */
@@ -133,7 +137,7 @@
   --agentprism-foreground: var(--foreground);
   --agentprism-primary: var(--primary);
   --agentprism-primary-foreground: var(--primary-foreground);
-  --agentprism-secondary: var(--secondary);
+  --agentprism-secondary: oklch(from var(--foreground) l c h / 8%);
   --agentprism-secondary-foreground: var(--secondary-foreground);
   --agentprism-muted: var(--muted);
   --agentprism-muted-foreground: var(--muted-foreground);
@@ -142,7 +146,7 @@
 
   --agentprism-brand: var(--primary);
   --agentprism-brand-foreground: var(--primary-foreground);
-  --agentprism-brand-secondary: var(--secondary);
+  --agentprism-brand-secondary: oklch(from var(--foreground) l c h / 8%);
   --agentprism-brand-secondary-foreground: var(--secondary-foreground);
 
   --agentprism-border: var(--border);

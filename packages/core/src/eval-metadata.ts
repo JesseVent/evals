@@ -45,6 +45,7 @@ export const evalSuiteSchema = z.enum([
   'regression',
   'other',
   'trigger',
+  'triage',
 ]);
 export const EVAL_SUITES = evalSuiteSchema.options;
 export type EvalSuite = z.infer<typeof evalSuiteSchema>;
@@ -54,6 +55,7 @@ export const experimentSuiteSchema = z.enum([
   'no-skills',
   'regression',
   'trigger',
+  'triage',
 ]);
 export const EXPERIMENT_SUITES = experimentSuiteSchema.options;
 export type ExperimentSuite = z.infer<typeof experimentSuiteSchema>;

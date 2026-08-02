@@ -8,4 +8,4 @@ topic:
   - sql
 ---
 
-how do I create a users table
+Add a description text column to the `products` table in my local Supabase stack

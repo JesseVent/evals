@@ -1,8 +1,5 @@
 import { formatDuration, getTimelineData } from "@evilmartians/agent-prism-data"
-import type {
-  TraceSpan,
-  TraceSpanCategory,
-} from "@evilmartians/agent-prism-types"
+import type { TraceSpan } from "@evilmartians/agent-prism-types"
 import * as Collapsible from "@radix-ui/react-collapsible"
 import cn from "classnames"
 import type { FC, KeyboardEvent, MouseEvent } from "react"
@@ -53,26 +50,6 @@ interface SpanCardState {
   isExpanded: boolean
   hasChildren: boolean
   isSelected: boolean
-}
-
-// ─── Left-border accent per span type (sequence signaling) ───
-
-const SPAN_ACCENT_COLORS: Record<TraceSpanCategory, string> = {
-  llm_call: "border-l-[#a78bfa]", // violet — AI thinking
-  agent_invocation: "border-l-[#818cf8]", // indigo — agent orchestration
-  tool_execution: "border-l-[#3ECF8E]", // Supabase green — tool execution
-  chain_operation: "border-l-[#67e8f9]", // cyan — chain step
-  retrieval: "border-l-[#93c5fd]", // blue — data fetch
-  embedding: "border-l-[#3ECF8E]", // green — vector op
-  guardrail: "border-l-[#f87171]", // red — safety check
-  create_agent: "border-l-[#818cf8]", // indigo — agent orchestration
-  span: "border-l-[#93c5fd]", // blue — generic span
-  event: "border-l-[#3ECF8E]", // green — event
-  unknown: "border-l-[#94a3b8]", // slate — unknown
-}
-
-function getSpanAccentClass(type: TraceSpanCategory): string {
-  return SPAN_ACCENT_COLORS[type] ?? SPAN_ACCENT_COLORS.unknown
 }
 
 const getGridTemplateColumns = ({
@@ -365,8 +342,6 @@ export const SpanCard: FC<SpanCardProps> = ({
             className={cn(
               "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1",
               "mb-3 min-h-5 w-full cursor-pointer",
-              "rounded-l-sm border-l-2",
-              getSpanAccentClass(data.type),
               level !== 0 && !hasExpandButtonAsFirstChild && "pl-2",
               level !== 0 && hasExpandButtonAsFirstChild && "pl-1"
             )}

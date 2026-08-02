@@ -16,9 +16,11 @@ const experimentSuiteParser = createParser<ExperimentSuite>({
   parse: (value) => {
     if (value === "with" || value === "benchmark") return "benchmark"
     if (value === "without" || value === "no-skills") return "no-skills"
+    if (value === "trigger") return "trigger"
     return null
   },
-  serialize: (value) => (value === "benchmark" ? "with" : "without"),
+  serialize: (value) =>
+    value === "benchmark" ? "with" : value === "no-skills" ? "without" : "trigger",
 })
 
 export const resultsQueryParsers = {

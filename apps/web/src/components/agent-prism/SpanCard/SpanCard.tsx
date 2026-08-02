@@ -17,9 +17,6 @@ import { SpanCardToggle } from "./SpanCardToggle"
 
 const LAYOUT_CONSTANTS = {
   CONNECTOR_WIDTH: 20,
-  // Name/badges is the identifying part of a row — worth far more width than
-  // the timeline bar, which only needs enough to show relative proportion.
-  CONTENT_BASE_WIDTH: 600,
 } as const
 
 type ExpandButtonPlacement = "inside" | "outside"
@@ -74,32 +71,6 @@ function getSpanAccentClass(type: string): string {
   return SPAN_ACCENT_COLORS[type] ?? SPAN_ACCENT_COLORS.unknown
 }
 
-const getContentWidth = ({
-  level,
-  hasExpandButton,
-  contentPadding,
-  expandButton,
-}: {
-  level: number
-  hasExpandButton: boolean
-  contentPadding: number
-  expandButton: ExpandButtonPlacement
-}) => {
-  let width =
-    LAYOUT_CONSTANTS.CONTENT_BASE_WIDTH -
-    level * LAYOUT_CONSTANTS.CONNECTOR_WIDTH
-
-  if (hasExpandButton && expandButton === "inside") {
-    width -= LAYOUT_CONSTANTS.CONNECTOR_WIDTH
-  }
-
-  if (expandButton === "outside" && level === 0) {
-    width -= LAYOUT_CONSTANTS.CONNECTOR_WIDTH
-  }
-
-  return width - contentPadding
-}
-
 const getGridTemplateColumns = ({
   connectorsColumnWidth,
   expandButton,
@@ -112,20 +83,6 @@ const getGridTemplateColumns = ({
   }
 
   return `${connectorsColumnWidth}px 1fr ${LAYOUT_CONSTANTS.CONNECTOR_WIDTH}px`
-}
-
-const getContentPadding = ({
-  level,
-  hasExpandButton,
-}: {
-  level: number
-  hasExpandButton: boolean
-}) => {
-  if (level === 0) return 0
-
-  if (hasExpandButton) return 4
-
-  return 8
 }
 
 const getConnectorsLayout = ({
@@ -336,18 +293,6 @@ export const SpanCard: FC<SpanCardProps> = ({
   const hasExpandButtonAsFirstChild =
     expandButton === "inside" && state.hasChildren
 
-  const contentPadding = getContentPadding({
-    level,
-    hasExpandButton: hasExpandButtonAsFirstChild,
-  })
-
-  const contentWidth = getContentWidth({
-    level,
-    hasExpandButton: hasExpandButtonAsFirstChild,
-    contentPadding,
-    expandButton,
-  })
-
   const { connectors, connectorsColumnWidth } = getConnectorsLayout({
     level,
     hasExpandButton: hasExpandButtonAsFirstChild,
@@ -414,7 +359,7 @@ export const SpanCard: FC<SpanCardProps> = ({
           </div>
           <div
             className={cn(
-              "flex flex-wrap items-start gap-x-2 gap-y-1",
+              "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1",
               "mb-3 min-h-5 w-full cursor-pointer",
               "rounded-l-sm border-l-2",
               getSpanAccentClass(data.type),
@@ -423,16 +368,13 @@ export const SpanCard: FC<SpanCardProps> = ({
             )}
           >
             <div
-              className="relative flex min-h-4 shrink-0 flex-wrap items-center gap-1.5"
-              style={{
-                width: `min(${contentWidth}px, 100%)`,
-                minWidth: 140,
-              }}
+              className="relative flex min-h-4 min-w-0 flex-wrap items-center gap-1.5"
+              style={{ minWidth: 140 }}
             >
               {avatar && <Avatar size="4" {...avatar} />}
 
               <h3
-                className="max-w-[420px] truncate font-mono text-sm leading-[14px] text-agentprism-foreground"
+                className="max-w-full truncate font-mono text-sm leading-[14px] text-agentprism-foreground"
                 title={data.title}
               >
                 {data.title}
@@ -441,7 +383,7 @@ export const SpanCard: FC<SpanCardProps> = ({
               <SpanCardBadges data={data} />
             </div>
 
-            <div className="flex grow flex-wrap items-center justify-end gap-1">
+            <div className="flex flex-nowrap items-center justify-end gap-1">
               {expandButton === "outside" && withStatus && (
                 <div>
                   <SpanStatus status={data.status} />

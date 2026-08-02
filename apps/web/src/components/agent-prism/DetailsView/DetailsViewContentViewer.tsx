@@ -3,6 +3,7 @@ import type { ReactElement } from "react"
 import { CopyButton } from "../CopyButton"
 import { DetailsViewJsonOutput } from "./DetailsViewJsonOutput"
 import { DetailsViewMarkdown } from "./DetailsViewMarkdown"
+import { DetailsViewPrettyOutput } from "./DetailsViewPrettyOutput"
 
 export type DetailsViewContentViewMode = "json" | "plain"
 
@@ -52,6 +53,10 @@ export const DetailsViewContentViewer = ({
       ) : renderMarkdown ? (
         <div className="rounded-lg bg-agentprism-background p-4">
           <DetailsViewMarkdown content={content} />
+        </div>
+      ) : parsedContent ? (
+        <div className="rounded-lg bg-agentprism-background p-4">
+          <DetailsViewPrettyOutput content={parsedContent} />
         </div>
       ) : (
         <div className="rounded-lg bg-agentprism-background p-4">

@@ -1,7 +1,7 @@
 import type { TraceSpan } from "@evilmartians/agent-prism-types"
 import type { ReactElement } from "react"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { CollapsibleSection } from "../CollapsibleSection"
 import { deepParseJson } from "../shared"
 import { TabSelector } from "../TabSelector"
@@ -96,15 +96,11 @@ const IOSection = ({
   parsedContent,
   renderMarkdown,
 }: IOSectionProps): ReactElement => {
-  const [tab, setTab] = useState<DetailsViewContentViewMode>(
-    parsedContent ? "json" : "plain"
-  )
-
-  useEffect(() => {
-    if (tab === "json" && !parsedContent) {
-      setTab("plain")
-    }
-  }, [tab, parsedContent])
+  // "Plain" renders real line breaks (DetailsViewPrettyOutput) — the right
+  // default for tool call args/results, which are often multi-line shell
+  // commands or command output that read as an unreadable single line of
+  // escaped `\n`s under strict JSON. "JSON" stays available for exact syntax.
+  const [tab, setTab] = useState<DetailsViewContentViewMode>("plain")
 
   const tabItems: TabItem<DetailsViewContentViewMode>[] = [
     { value: "json", label: "JSON", disabled: !parsedContent },
@@ -118,7 +114,7 @@ const IOSection = ({
       rightContent={
         <TabSelector<DetailsViewContentViewMode>
           items={tabItems}
-          defaultValue={parsedContent ? "json" : "plain"}
+          defaultValue="plain"
           value={tab}
           onValueChange={setTab}
           theme="pill"

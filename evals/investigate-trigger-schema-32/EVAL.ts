@@ -8,4 +8,7 @@ const TRIGGER_SKILLS = [
   'supabase-postgres-best-practices',
 ] as const;
 
-export default createSkillTriggerScorer(['supabase', 'supabase-postgres-best-practices'], TRIGGER_SKILLS);
+export default createSkillTriggerScorer(
+  ['supabase', 'supabase-postgres-best-practices'],
+  TRIGGER_SKILLS
+);

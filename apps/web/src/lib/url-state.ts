@@ -20,7 +20,11 @@ const experimentSuiteParser = createParser<ExperimentSuite>({
     return null
   },
   serialize: (value) =>
-    value === "benchmark" ? "with" : value === "no-skills" ? "without" : "trigger",
+    value === "benchmark"
+      ? "with"
+      : value === "no-skills"
+        ? "without"
+        : "trigger",
 })
 
 export const resultsQueryParsers = {

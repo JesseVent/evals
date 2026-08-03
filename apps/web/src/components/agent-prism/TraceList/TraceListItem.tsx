@@ -77,14 +77,14 @@ export const TraceListItem = ({
           {statusBadge && <Badge size="4" {...statusBadge} />}
 
           {typeof totalTokens === "number" && (
-            <span className="inline-flex items-center gap-1 text-xs tabular-nums text-agentprism-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-xs text-agentprism-muted-foreground tabular-nums">
               <Coins className="size-3 shrink-0" />
               {formatTokenCount(totalTokens)}
             </span>
           )}
 
           {typeof totalCost === "number" && (
-            <span className="text-xs tabular-nums text-agentprism-muted-foreground">
+            <span className="text-xs text-agentprism-muted-foreground tabular-nums">
               ${totalCost}
             </span>
           )}

@@ -36,10 +36,7 @@ function renderValue(value: unknown): ReactNode {
     return (
       <div className="flex flex-col gap-2">
         {value.map((item, index) => (
-          <div
-            key={index}
-            className="border-l-2 border-agentprism-border pl-3"
-          >
+          <div key={index} className="border-l-2 border-agentprism-border pl-3">
             {renderValue(item)}
           </div>
         ))}

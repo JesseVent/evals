@@ -1,4 +1,5 @@
 ---
+motivation: derived from deploy-self-hosting-001-docker-compose, AI-816, https://supabase.com/docs/guides/self-hosting/docker
 stage: investigate
 suite: triage
 interface: mcp

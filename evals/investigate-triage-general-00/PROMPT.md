@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-cli-001-bootstrap-app, AI-809, https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs
 stage: investigate
 suite: triage
 interface: mcp

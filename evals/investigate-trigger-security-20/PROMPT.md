@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-auth-001-deleted-user-access, AI-820, AI-422, https://supabase.com/docs/guides/troubleshooting/should-i-set-a-shorter-max-age-parameter-on-the-cookies-8sbF4V
 stage: investigate
 suite: trigger
 interface: mcp

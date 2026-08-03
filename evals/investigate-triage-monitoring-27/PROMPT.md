@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-reliability-003-edge-function-5xx-correlation, AI-818, SU-341553, SU-341817
 stage: investigate
 suite: triage
 interface: mcp

@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-vectors-001-rag-with-permissions, AI-811, FDBKIN-14517
 stage: investigate
 suite: triage
 interface: mcp

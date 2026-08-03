@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-realtime-001-subscribed-no-events, AI-819, REAL-577
 stage: investigate
 suite: trigger
 interface: mcp

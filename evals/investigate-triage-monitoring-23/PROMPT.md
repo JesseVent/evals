@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-logs-001-top-error-function; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: triage
 interface: mcp

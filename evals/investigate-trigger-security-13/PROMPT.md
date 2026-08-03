@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-rls-003-org-roles-permissions; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: trigger
 interface: mcp

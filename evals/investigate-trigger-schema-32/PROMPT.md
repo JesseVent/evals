@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-database-001-migration-history-mismatch, AI-823
 stage: investigate
 suite: trigger
 interface: mcp

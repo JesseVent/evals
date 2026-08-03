@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-dataapi-002-update-zero-rows-affected, https://supabase.com/docs/guides/troubleshooting/rls-simplified-BJTcS8, supabase/agent-skills#112
 stage: investigate
 suite: trigger
 interface: mcp

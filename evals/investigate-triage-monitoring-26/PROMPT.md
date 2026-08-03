@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-reliability-002-subtle-error-spike; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: triage
 interface: mcp

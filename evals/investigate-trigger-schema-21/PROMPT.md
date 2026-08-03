@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-db-001-table-row-counts; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: trigger
 interface: mcp

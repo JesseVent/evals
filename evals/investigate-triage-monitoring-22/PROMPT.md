@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-functions-001-546-resource-limit, https://supabase.com/docs/guides/troubleshooting/edge-function-546-error-response, supabase/agent-skills#112
 stage: investigate
 suite: triage
 interface: mcp

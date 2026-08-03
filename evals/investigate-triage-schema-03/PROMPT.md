@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-database-001-migrate-postgres-to-supabase, AI-825, https://supabase.com/docs/guides/platform/migrating-to-supabase/postgres
 stage: investigate
 suite: triage
 interface: mcp

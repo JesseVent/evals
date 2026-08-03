@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-security-001-rls-cross-user-leak; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: triage
 interface: mcp

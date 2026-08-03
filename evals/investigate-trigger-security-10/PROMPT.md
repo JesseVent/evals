@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-functions-006-dual-auth-with-server, FDBKIN-19273
 stage: investigate
 suite: trigger
 interface: mcp

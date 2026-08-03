@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-performance-001-slow-query-cpu-spike, AI-824, FDBKIN-1563, FDBKIN-17002, FDBKIN-1688, https://supabase.com/docs/guides/troubleshooting/high-cpu-usage
 stage: investigate
 suite: triage
 interface: mcp

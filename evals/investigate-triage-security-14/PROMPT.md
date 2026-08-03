@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-storage-001-private-bucket-access, AI-810, STORAGE-478, AI-676
 stage: investigate
 suite: triage
 interface: mcp

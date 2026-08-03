@@ -1,4 +1,5 @@
 ---
+motivation: derived from investigate-security-001-public-table; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: triage
 interface: mcp

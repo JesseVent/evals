@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-storage-001-upsert-missing-update-policy, https://supabase.com/docs/guides/troubleshooting/why-cant-i-uploadlistetc-my-public-bucket-Z6CmGt, supabase/agent-skills#112
 stage: investigate
 suite: trigger
 interface: mcp

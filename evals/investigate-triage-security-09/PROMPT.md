@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-functions-005-dual-auth-user-secret, FDBKIN-19273
 stage: investigate
 suite: triage
 interface: mcp

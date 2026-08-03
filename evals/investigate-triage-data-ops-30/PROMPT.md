@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-dataapi-002-secure-default-grants, AI-914, AI-667
 stage: investigate
 suite: triage
 interface: mcp

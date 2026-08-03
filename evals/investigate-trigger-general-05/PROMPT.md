@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-functions-001-order-total; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: trigger
 interface: mcp

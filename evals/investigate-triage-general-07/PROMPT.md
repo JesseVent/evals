@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-functions-003-todos-crud-api; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: triage
 interface: mcp

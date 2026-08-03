@@ -1,4 +1,5 @@
 ---
+motivation: derived from resolve-dataapi-001-empty-results, AI-822, https://supabase.com/docs/guides/troubleshooting/why-is-my-select-returning-an-empty-data-array-and-i-have-data-in-the-table-xvOPgx
 stage: investigate
 suite: trigger
 interface: mcp

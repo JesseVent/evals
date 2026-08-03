@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-functions-004-service-role-bypass; provenance carried by the canonical eval (see evals/trigger/MAPPING.md)
 stage: investigate
 suite: trigger
 interface: mcp

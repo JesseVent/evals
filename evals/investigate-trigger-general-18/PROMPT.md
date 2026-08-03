@@ -1,4 +1,5 @@
 ---
+motivation: derived from deploy-functions-001-edge-function-secrets, AI-815
 stage: investigate
 suite: trigger
 interface: mcp

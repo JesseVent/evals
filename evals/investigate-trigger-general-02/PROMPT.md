@@ -1,4 +1,5 @@
 ---
+motivation: derived from build-cli-003-pg-cron-queue-workflow, AI-812, https://supabase.com/docs/guides/queues/consuming-messages-with-edge-functions
 stage: investigate
 suite: trigger
 interface: mcp

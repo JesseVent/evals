@@ -1,4 +1,5 @@
 ---
+motivation: derived from deploy-database-001-prometheus-metrics, AI-817
 stage: investigate
 suite: trigger
 interface: mcp

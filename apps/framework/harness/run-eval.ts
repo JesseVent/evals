@@ -375,6 +375,8 @@ async function runOne(
     agentReport: string;
     stoppedReason: string;
     usage?: AgentUsage;
+    stepCount?: number;
+    toolCallCount: number;
     durationMs: number;
   }
 > {
@@ -490,6 +492,8 @@ async function runOne(
       agentReport: run.agentReport,
       stoppedReason: run.stoppedReason,
       usage: run.usage,
+      stepCount: run.stepCount,
+      toolCallCount: run.toolCalls.length,
       durationMs: run.durationMs,
     };
   }
@@ -550,6 +554,8 @@ async function runOne(
     agentReport: run.agentReport,
     stoppedReason: run.stoppedReason,
     usage: run.usage,
+    stepCount: run.stepCount,
+    toolCallCount: run.toolCalls.length,
     durationMs: run.durationMs,
   };
 }

@@ -425,6 +425,7 @@ async function runOne(
       : undefined;
     await using session = disposable(
       await exp.localStack.startSession({
+        agent: exp.agent.id,
         cliVersion: ev.metadata.cliVersion,
         localDir: ev.localDir,
         includeServices: ev.metadata.services,
@@ -503,6 +504,7 @@ async function runOne(
   await using cliSandbox = agentRunsInSandbox
     ? disposable(
         await createBareSandbox({
+          agent: exp.agent.id,
           skills: skillSources,
           mounts: supabaseMcpServerMounts(),
         })

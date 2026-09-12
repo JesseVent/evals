@@ -12,13 +12,12 @@
  * Token accounting: each assistant `TranscriptPart` carries real per-turn
  * `usage` (from ai-sdk's `step.usage` or the CLI agent's own usage event —
  * see `TokenUsage` in transcript/types.ts). An `Assistant`/`llm_call` span's
- * `tokensCount` is that turn's own cost. The cost of loading a skill is the
- * *context growth* it causes: `inputTokens` is cumulative context size, so
- * the jump between one assistant turn's `inputTokens` and the next is what
- * everything between them (skill loads, other tool results) added to context.
- * That delta is attributed to any `load_skill` tool-execution spans in the
- * gap (split evenly if more than one loaded before the next turn) — an
- * honest per-turn-boundary number, not a per-skill-body byte count.
+ * `tokensCount` is that turn's own cost. A `tool_execution` span's cost is
+ * the context growth it causes: `inputTokens` is cumulative context size, so
+ * the jump between one turn's `inputTokens` and the next is what everything
+ * between them (tool results, skill bodies) added to context. That delta is
+ * split across the gap's tool spans, weighted by result size — see
+ * `recordTurn`.
  */
 
 import type {
@@ -81,8 +80,9 @@ export function evalResultToTraceSpans(
   // Real wall-clock position per child (parallel to `children`), used for the
   // duration pass below. `undefined` until the first real `ts` arrives (the
   // seeded system/user prompt has none) — never fabricated, so a trace from
-  // an agent/path with no timing data (e.g. Codex's --json stream) honestly
-  // stays at 0ms everywhere rather than showing invented numbers.
+  // an agent/path with no timing data (e.g. a Codex run whose rollout wasn't
+  // correlated) honestly stays at 0ms everywhere rather than showing invented
+  // numbers.
   const childTs: (number | undefined)[] = [];
   let clock: number | undefined;
   const advance = (ts: number | undefined): number | undefined => {
@@ -99,44 +99,54 @@ export function evalResultToTraceSpans(
   // produces no text; see TranscriptPart.usage). `inputTokens` at turn N is
   // the context size BEFORE that turn's model call, so the jump between turn
   // N and turn N+1 is what turn N itself (its own output plus its tool
-  // results — skill bodies included) added to context. `pendingLoadSpans`
-  // accumulates load_skill spans since the last resolved delta, INCLUDING
-  // ones from the turn that's only now closing — they aren't resolvable
-  // until the *following* turn's usage arrives, so they must not be cleared
-  // when that turn's own recordTurn call runs, only after the next one uses
-  // them.
+  // results — skill bodies included) added to context. That delta is what
+  // every tool span in the gap costs the context window; it's split across
+  // them weighted by result size. pendingToolSpans accumulates tool spans
+  // since the last resolved delta, INCLUDING ones from the turn that's only
+  // now closing — they aren't resolvable until the *following* turn's usage
+  // arrives, so they must not be cleared when that turn's own recordTurn
+  // call runs, only after the next one uses them.
   let lastTurnInputTokens: number | undefined;
-  let pendingLoadSpans: number[] = [];
-  const skillLoadDeltas: { childIndex: number; tokensAdded: number }[] = [];
+  let lastTurnOutputTokens: number | undefined;
+  let pendingToolSpans: { childIndex: number; weight: number }[] = [];
+  const toolCostDeltas: { childIndex: number; tokensAdded: number }[] = [];
   let totalTokens: number | undefined;
 
   const recordTurn = (usage: TokenUsage | undefined) => {
     if (usage?.inputTokens === undefined) return;
     if (lastTurnInputTokens !== undefined) {
       const delta = usage.inputTokens - lastTurnInputTokens;
-      // A positive jump in context size since the LAST RESOLVED delta is what
-      // every load_skill call since then added — including ones that closed
-      // their own turn before this one (a turn's own inputTokens is a
+      // The context-size jump since the LAST RESOLVED turn is what every
+      // tool result since then added to context — including results of tool
+      // calls that closed their own turn (a turn's own inputTokens is a
       // baseline BEFORE its own tool calls' results land in context; those
       // results, skill bodies included, only show up in the NEXT turn's
-      // inputTokens). Split evenly across load_skill spans in that gap; a
-      // negative or zero delta (context compaction, or nothing loaded)
-      // attributes nothing. Approximate — this can't isolate a skill load's
-      // cost from a same-gap non-skill tool result's — but it's real usage,
-      // not a byte-count guess. pendingLoadSpans is intentionally NOT cleared
-      // when there's no prior baseline (the branch below) — a load before the
-      // run's first resolvable turn still needs to survive to be attributed
-      // by whichever LATER turn's delta first captures its result landing in
-      // context.
-      if (delta > 0 && pendingLoadSpans.length > 0) {
-        const share = Math.round(delta / pendingLoadSpans.length);
-        for (const idx of pendingLoadSpans) {
-          skillLoadDeltas.push({ childIndex: idx, tokensAdded: share });
+      // inputTokens). The previous turn's own generation is the model's
+      // output, not a tool's cost, so it's excluded when known. The
+      // remainder splits across the gap's tool spans weighted by result
+      // size — a skill body's share dwarfs a small command's, matching what
+      // each actually injected into context. Approximate — chars proxy for
+      // tokens, and a same-gap non-result cost can't be isolated — but real
+      // usage, not a byte-count guess. A negative or zero delta (context
+      // compaction, or nothing to attribute) attributes nothing.
+      const toolDelta = Math.max(0, delta - (lastTurnOutputTokens ?? 0));
+      if (toolDelta > 0 && pendingToolSpans.length > 0) {
+        const totalWeight = pendingToolSpans.reduce(
+          (sum, t) => sum + t.weight,
+          0
+        );
+        for (const t of pendingToolSpans) {
+          const share =
+            totalWeight > 0
+              ? Math.round((toolDelta * t.weight) / totalWeight)
+              : Math.round(toolDelta / pendingToolSpans.length);
+          toolCostDeltas.push({ childIndex: t.childIndex, tokensAdded: share });
         }
       }
-      pendingLoadSpans = [];
+      pendingToolSpans = [];
     }
     lastTurnInputTokens = usage.inputTokens;
+    lastTurnOutputTokens = usage.outputTokens;
   };
 
   for (const part of transcript) {
@@ -183,6 +193,11 @@ export function evalResultToTraceSpans(
         value: { stringValue: name },
       })
     );
+    // What the tool's result puts into context — the split weight for cost
+    // attribution below, and the span's output text (error routes there too).
+    const resultText =
+      part.error ??
+      (part.output !== undefined ? safeStringify(part.output) : undefined);
     children.push(
       makeSpan({
         id: nextId('tool'),
@@ -191,9 +206,7 @@ export function evalResultToTraceSpans(
         status: part.error ? 'error' : 'success',
         clock: spanTs ?? 0,
         input: safeStringify(part.input),
-        output:
-          part.error ??
-          (part.output !== undefined ? safeStringify(part.output) : undefined),
+        output: resultText,
         attributes: attrs.length > 0 ? attrs : undefined,
         // A tool span's cost is only ever known via the delta-attribution
         // pass below (its own turn-usage, if it happens to close a turn, is
@@ -201,18 +214,24 @@ export function evalResultToTraceSpans(
       })
     );
     childTs.push(spanTs);
-    if (attrs.length > 0) pendingLoadSpans.push(children.length - 1);
+    // Resolve the prior delta BEFORE enqueuing this span: a tool that closes
+    // a turn carries the baseline for that turn — its own result lands after
+    // its call, so it belongs to the NEXT gap's attribution, not this one's.
     if (part.usage) recordTurn(part.usage);
+    pendingToolSpans.push({
+      childIndex: children.length - 1,
+      weight: resultText ? resultText.length : 0,
+    });
   }
 
-  // Apply the attributed skill-load costs computed above — the only source
+  // Apply the attributed tool costs computed above — the only source
   // of tokensCount on a tool_execution span. Done as a second pass (mutating
-  // already-built spans) since a load's cost is only known once the
-  // *following* turn's usage arrives. Not added to totalTokens: a load's
+  // already-built spans) since a tool's cost is only known once the
+  // *following* turn's usage arrives. Not added to totalTokens: an
   // attributed cost is already part of the following turn's own inputTokens,
   // which that turn's own tokensCount (summed above) already counts —
   // adding it again here would double-count it.
-  for (const { childIndex, tokensAdded } of skillLoadDeltas) {
+  for (const { childIndex, tokensAdded } of toolCostDeltas) {
     children[childIndex].tokensCount = tokensAdded;
   }
 

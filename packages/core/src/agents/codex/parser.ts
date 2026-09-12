@@ -19,7 +19,10 @@
  * its own event (see `parseTranscript`).
  *
  * NB: this is the `--json` event schema, NOT the `~/.codex/sessions` rollout
- * format (event_msg/response_item) that older parsers targeted.
+ * format (event_msg/response_item) that older parsers targeted. The rollout is
+ * still consumed — as `ctx.rollout` — for two things the `--json` stream
+ * lacks: per-item timestamps (see `applyRolloutTimestamps`) and per-model-call
+ * token usage (the stream's `turn.completed` covers the whole exec run once).
  */
 
 import { isRecord, parseJsonlRecords } from '../../json.js';
@@ -29,7 +32,10 @@ import type {
   TokenUsage,
   TranscriptEvent,
 } from '../../transcript/types.js';
-import type { AgentTranscriptParser } from '../../parsers/types.js';
+import type {
+  AgentTranscriptParser,
+  ParseContext,
+} from '../../parsers/types.js';
 import {
   normalizeToolName,
   type AgentToolMap,
@@ -266,7 +272,7 @@ function recordToEvents(data: Record<string, unknown>): TranscriptEvent[] {
 }
 
 export const codexParser: AgentTranscriptParser = {
-  parseTranscript(raw: string): ParsedTranscript {
+  parseTranscript(raw: string, ctx?: ParseContext): ParsedTranscript {
     const { records, errors } = parseJsonlRecords(raw);
     const events: TranscriptEvent[] = [];
     // `turn.completed.usage` covers the whole turn (every item since the last
@@ -298,6 +304,122 @@ export const codexParser: AgentTranscriptParser = {
         errors.push(e instanceof Error ? e.message : String(e));
       }
     }
+    if (ctx?.rollout) applyRolloutTimestamps(events, ctx.rollout);
     return { events, errors };
   },
 };
+
+/** Rollout response_item types that map to a stream tool_call event. Shapes
+ * drift across CLI versions (custom_tool_call vs function_call vs
+ * local_shell_call), so accept the known variants — an unrecognized one just
+ * leaves its event untimed rather than desyncing the walk. */
+const TOOL_ITEM_TYPES: ReadonlySet<unknown> = new Set([
+  'custom_tool_call',
+  'function_call',
+  'local_shell_call',
+  'web_search_call',
+]);
+
+/**
+ * The `--json` stream carries no timestamps, but the session rollout Codex
+ * writes alongside it logs a wall-clock `timestamp` per response item, in the
+ * same order the stream completes them (agent_message ↔ assistant message,
+ * reasoning ↔ thinking, custom_tool_call/function_call ↔ tool call). Walk both
+ * sequences together and stamp each event; a tool_call's paired tool_result
+ * gets the output item's timestamp so real tool durations survive. Events the
+ * walk can't match confidently stay untimed — durations are never fabricated
+ * (see trace-viewer.ts).
+ */
+function applyRolloutTimestamps(
+  events: TranscriptEvent[],
+  rollout: string
+): void {
+  type Stamp = {
+    ts: string;
+    kind: 'message' | 'reasoning' | 'tool';
+    outTs?: string;
+    usage?: TokenUsage;
+  };
+  const stamps: Stamp[] = [];
+  const { records } = parseJsonlRecords(rollout);
+  // Stamps since the last `token_count` belong to one model response; when
+  // the count arrives it closes that group, so its usage lands on the
+  // group's LAST stamp — the same "attach to the turn's last event" rule the
+  // `--json` path uses, just at one-response granularity.
+  let groupStart = 0;
+  for (const record of records) {
+    const payload = isRecord(record.payload) ? record.payload : undefined;
+    if (
+      record.type === 'event_msg' &&
+      payload?.type === 'token_count' &&
+      isRecord(payload.info)
+    ) {
+      const usage = extractTurnUsage({
+        usage: payload.info.last_token_usage,
+      });
+      if (usage && stamps.length > groupStart)
+        stamps[stamps.length - 1]!.usage = usage;
+      groupStart = stamps.length;
+      continue;
+    }
+    if (record.type !== 'response_item') continue;
+    const ts = str(record.timestamp);
+    if (!payload || !ts) continue;
+    const kind =
+      payload.type === 'agent_message' ||
+      (payload.type === 'message' && payload.role === 'assistant')
+        ? 'message'
+        : payload.type === 'reasoning'
+          ? 'reasoning'
+          : TOOL_ITEM_TYPES.has(payload.type)
+            ? 'tool'
+            : undefined;
+    if (kind) stamps.push({ ts, kind });
+    else if (
+      typeof payload.type === 'string' &&
+      payload.type.endsWith('_output') &&
+      stamps.length > 0
+    ) {
+      // The output follows its call immediately; give that call the real
+      // completion time for its paired tool_result.
+      stamps[stamps.length - 1]!.outTs = ts;
+    }
+  }
+  if (stamps.length === 0) return;
+
+  // Look ahead a few stamps when kinds don't line up, tolerating an item that
+  // exists on one side but not the other (dropped reasoning, extra stream
+  // item) without misaligning everything after it.
+  const LOOKAHEAD = 6;
+  let p = 0;
+  const resultTsByCallId = new Map<string, string>();
+  for (const ev of events) {
+    const kind =
+      ev.type === 'thinking'
+        ? 'reasoning'
+        : ev.type === 'tool_call'
+          ? 'tool'
+          : ev.type === 'message' && ev.role === 'assistant'
+            ? 'message'
+            : undefined;
+    if (!kind) continue;
+    const idx =
+      p + stamps.slice(p, p + LOOKAHEAD).findIndex((s) => s.kind === kind);
+    if (idx < p || idx >= stamps.length) continue;
+    ev.timestamp = stamps[idx]!.ts;
+    if (
+      stamps[idx]!.usage &&
+      (ev.type === 'message' || ev.type === 'tool_call')
+    )
+      ev.usage = stamps[idx]!.usage;
+    if (ev.type === 'tool_call' && ev.tool?.id && stamps[idx]!.outTs) {
+      resultTsByCallId.set(ev.tool.id, stamps[idx]!.outTs!);
+    }
+    p = idx + 1;
+  }
+  for (const ev of events) {
+    if (ev.type === 'tool_result' && ev.tool?.id) {
+      ev.timestamp = resultTsByCallId.get(ev.tool.id) ?? ev.timestamp;
+    }
+  }
+}

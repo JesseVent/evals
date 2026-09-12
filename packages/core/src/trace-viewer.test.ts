@@ -184,7 +184,8 @@ describe('evalResultToTraceSpans', () => {
         role: 'assistant',
         content: 'Now applying the fix.',
         // Context grew by 1800 tokens (2800 - 1000) after the skill loaded —
-        // that's the skill fragment's real cost in this run's context window.
+        // minus the first turn's own 10 generated tokens, the load span is
+        // attributed the 1790 the skill fragment actually injected.
         usage: { inputTokens: 2800, outputTokens: 15, totalTokens: 2815 },
       },
     ];
@@ -209,7 +210,7 @@ describe('evalResultToTraceSpans', () => {
     const children = data.spans[0]!.children!;
     expect(children[0]!.tokensCount).toBe(1010); // first turn's own cost
     expect(children[1]!.title).toBe('Tool: load_skill');
-    expect(children[1]!.tokensCount).toBe(1800); // context growth attributed to the load
+    expect(children[1]!.tokensCount).toBe(1790); // context growth minus the model's own 10 tokens
     expect(children[2]!.tokensCount).toBe(2815); // second turn's own cost
   });
 
@@ -287,12 +288,13 @@ describe('evalResultToTraceSpans', () => {
     // usage (6200) never leaks onto the load span that carried it — only the
     // delta-attribution pass sets tokensCount on a load span.
     // Delta since the run's start (there's no earlier resolved baseline) to
-    // step 2's inputTokens (11500) is 11500 - 6000 = 5500, split across the
-    // two pending loads = 2750 each.
-    expect(firstLoad.tokensCount).toBe(2750);
-    expect(secondLoad.tokensCount).toBe(2750);
-    // list_projects itself never gets a delta-attributed cost (only
-    // load_skill spans do) and closed no further turn to attribute anything.
+    // step 2's inputTokens (11500) is 11500 - 6000 = 5500; minus step 1's
+    // own 200 generated tokens = 5300. Split weighted by result size: the
+    // first load recorded no output (weight 0), so the second carries it all.
+    expect(firstLoad.tokensCount).toBe(0);
+    expect(secondLoad.tokensCount).toBe(5300);
+    // list_projects closed step 2, so it resolves this delta but belongs to
+    // the NEXT gap — with no later turn, it never gets a cost.
     expect(listProjects.tokensCount).toBeUndefined();
   });
 
@@ -349,9 +351,64 @@ describe('evalResultToTraceSpans', () => {
     });
 
     const children = data.spans[0]!.children!;
-    // 1500 - 500 = 1000, split evenly across the two loads.
-    expect(children[1]!.tokensCount).toBe(500);
-    expect(children[2]!.tokensCount).toBe(500);
+    // 1500 - 500 = 1000, minus the first turn's own 5 generated tokens =
+    // 995. Equal-size results split it evenly: 498 each (rounding).
+    expect(children[1]!.tokensCount).toBe(498);
+    expect(children[2]!.tokensCount).toBe(498);
+  });
+
+  it('attributes context growth to regular tool spans too, weighted by result size', () => {
+    // The ask: a plain command's token cost, not just skill loads. Two tools
+    // in one gap — the one whose result is 400 chars injects ~80x more
+    // context than the 5-char one, so it carries ~80x the delta share.
+    const run: TranscriptPart[] = [
+      {
+        type: 'message',
+        role: 'assistant',
+        content: 'Running checks.',
+        usage: { inputTokens: 1000, outputTokens: 10, totalTokens: 1010 },
+      },
+      {
+        type: 'tool_call',
+        name: 'shell',
+        input: { command: 'ls' },
+        output: 'small',
+      },
+      {
+        type: 'tool_call',
+        name: 'web_search',
+        input: { query: 'q' },
+        output: 'x'.repeat(400),
+      },
+      {
+        type: 'message',
+        role: 'assistant',
+        content: 'Done.',
+        usage: { inputTokens: 3000, outputTokens: 10, totalTokens: 3010 },
+      },
+    ];
+
+    const data = evalResultToTraceSpans({
+      evalId: 'e-tool-cost',
+      passed: true,
+      transcript: run,
+      toolCalls: [
+        { endpoint: 'shell', body: { command: 'ls' }, result: 'small', ts: 0 },
+        {
+          endpoint: 'web_search',
+          body: { query: 'q' },
+          result: 'x'.repeat(400),
+          ts: 0,
+        },
+      ],
+      agentReport: 'Done.',
+    });
+
+    const children = data.spans[0]!.children!;
+    // delta 3000 - 1000 = 2000, minus the prior turn's 10 generated tokens
+    // = 1990; weights 5 : 400 → 25 / 1965.
+    expect(children[1]!.tokensCount).toBe(25);
+    expect(children[2]!.tokensCount).toBe(1965);
   });
 
   it('does not attribute a negative or zero context delta to a skill load', () => {

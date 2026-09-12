@@ -55,6 +55,7 @@ type ExperimentExportMetadata = {
   experimentSuite?: ExperimentSuite;
 };
 
+const rawArgs = process.argv.slice(2);
 // Per-eval trace JSON for the web viewer's TracePanel. On by default; flip with
 // `--no-traces`. Written lazily (one file per evalId) so the aggregate bundle
 // stays lean — the web app fetches a trace only when a row is selected.
@@ -76,7 +77,6 @@ async function loadExperimentMetadata(): Promise<
   }
   return map;
 }
-const rawArgs = process.argv.slice(2);
 const EXPERIMENT_FILTERS = readRepeatedFlag(rawArgs, 'experiment').map(
   normalizeExperimentName
 );
